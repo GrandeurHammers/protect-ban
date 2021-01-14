@@ -1,0 +1,61 @@
+globalvar define numProtects;
+globalvar define numBans;
+globalvar define timePerSelection;
+// END CUSTOMIZATION
+globalvar define currentPhase; // Phase enum
+globalvar define isPhaseRunning;
+globalvar define selectTimeRemaining;
+globalvar define heroPool;
+globalvar define currentActiveTeam;
+
+playervar define selectionList;
+
+enum Phase {
+    Protect,
+    Ban,
+    Normal
+} 
+
+rule: "Customization Workshop Settings" 
+{
+    numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects Per Team", 1, 0, 15, 1);
+    numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans Per Team", 1, 0, 15, 0);
+    timePerSelection = WorkshopSettingInteger("Pick/Ban", "Time Limit Per Selection", 20, 10, 60, 2);
+}
+
+rule: "Global setup"
+{
+    # Initialize the hero pool
+    heroPool = AllHeroes();
+    # Set the current phase
+    if (numProtects > 0) {
+        currentPhase = Phase.Protect;
+    } else if (numBans > 0) {
+        currentPhase = Phase.Ban;
+    } else {
+        currentPhase = Phase.Normal;
+    }
+    // TODO: Create HUDs
+}
+
+disabled rule: "===PROTECT PHASE===" {}
+
+rule: "Start of protect phase setup"
+if (currentPhase == Phase.Protect)
+# Wait for everyone to spawn in
+if (IsTrueForAll(AllPlayers(Team.All), HasSpawned(ArrayElement())))
+{
+    # Being timing
+    selectTimeRemaining = timePerSelection * numProtects;
+    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
+    # Set phase running flag
+    isPhaseRunning = true;
+}
+
+rule: "End of protect phase setup"
+if (currentPhase == Phase.Protect)
+if (isPhaseRunning)
+if (IsTrueForAll(AllPlayers(Team.All), CountOf(ArrayElement().selectionList) == numProtects) || selectTimeRemaining == 0)
+{
+    # TODO: Tally votes and protect heroes per team
+}
