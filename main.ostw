@@ -3,7 +3,7 @@ globalvar define numBans;
 globalvar define timePerPhase;
 // END CUSTOMIZATION
 globalvar Phase currentPhase;
-globalvar define isVotingPhaseActive;
+globalvar define isPhaseActive;
 globalvar define selectTimeRemaining;
 globalvar define heroPool;
 globalvar define protectedHeroes;
@@ -15,9 +15,9 @@ globalvar define i 127;
 playervar define selectionList;
 
 enum Phase {
-    Protect,
-    Ban,
-    Normal
+    Protect = 1,
+    Ban = 2,
+    Normal = 3
 } 
 
 rule: "Customization Workshop Settings" 
@@ -37,6 +37,7 @@ void TallyVotes() "[SUB] Count up number of votes for each hero"
 }
 
 rule: "Global setup"
+if (IsWaitingForPlayers() == false)
 {
     # Initialize the hero pool
     heroPool = AllHeroes();
@@ -48,12 +49,18 @@ rule: "Global setup"
     } else {
         currentPhase = Phase.Normal;
     }
-    if (IsAssemblingHeroes()) {
-        SetMatchTime(1);
-    }
-    WaitUntil(Not(IsAssemblingHeroes()), 9999);
-    PauseMatchTime();
     // TODO: Create HUDs
+}
+
+rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
+if (IsAssemblingHeroes())
+if (currentPhase != Phase.Normal)
+{
+    SetMatchTime(0);
+    WaitUntil(Not(IsAssemblingHeroes()), 1000000);
+    PauseMatchTime();
+    WaitUntil(currentPhase == Phase.Normal, 1000000);
+    UnpauseMatchTime();
 }
 
 rule: "Player setup"
@@ -62,33 +69,42 @@ Event.OngoingPlayer
     # Initialize player selection list
     EventPlayer().selectionList = [];
     # If a hero pool has been decided, restrict the player to that pool
-    if (Phase.Normal) {
+    if (currentPhase == Phase.Normal) {
         SetAllowedHeroes(EventPlayer(), heroPool);
     }
+}
+
+rule: "Prevent player motion during Protect/Ban phases"
+Event.OngoingPlayer
+if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
+{
+    StartForcingPlayerPosition(EventPlayer(), PositionOf(EventPlayer()), false);
+    WaitUntil(currentPhase != Phase.Protect && currentPhase != Phase.Ban, 1000000);
+    StopForcingPlayerPosition(EventPlayer());
 }
 
 disabled rule: "====PROTECT PHASE====" {}
 
 rule: "Start of protect phase setup"
 if (currentPhase == Phase.Protect)
-if (isVotingPhaseActive == false)
+if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
+    BigMessage(AllPlayers(), "Started Protect Phase");
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
-    # Set voting phase active flag
-    isVotingPhaseActive = true;
+    # Set phase active flag
+    isPhaseActive = true;
 }
 
 rule: "End of protect phase"
 if (currentPhase == Phase.Protect)
-if (isVotingPhaseActive)
+if (isPhaseActive)
 if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProtects) || selectTimeRemaining == 0)
 {
-    #Voting phase no longer running
-    isVotingPhaseActive = false;
+    BigMessage(AllPlayers(), "Tallying Votes for Protect Phase");
     #Tally votes for heroes to protect
     TallyVotes();
     #Select the numProtects most voted heroes
@@ -104,6 +120,8 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
     AllPlayers().selectionList = [];
     // TODO: Communicate which heroes got protected
     Wait(5, WaitBehavior.IgnoreCondition);
+    #phase no longer running
+    isPhaseActive = false;
     #Move on to next phase
     currentPhase = numBans > 0 ? Phase.Ban : Phase.Normal;
 }
@@ -112,24 +130,24 @@ disabled rule: "====BAN PHASE====" {}
 
 rule: "Start of ban phase setup"
 if (currentPhase == Phase.Ban)
-if (isVotingPhaseActive == false)
+if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
+    BigMessage(AllPlayers(), "Started Ban Phase");
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
-    # Set voting phase active flag
-    isVotingPhaseActive = true;
+    # Set phase active flag
+    isPhaseActive = true;
 }
 
 rule: "End of ban phase"
 if (currentPhase == Phase.Ban)
-if (isVotingPhaseActive)
+if (isPhaseActive)
 if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans) || selectTimeRemaining == 0)
 {
-    #Voting phase no longer running
-    isVotingPhaseActive = false;
+    BigMessage(AllPlayers(), "Tallying Votes for Ban Phase");
     #Tally votes for heroes to protect
     TallyVotes();
     #Select the numBans most voted heroes
@@ -145,6 +163,8 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
     AllPlayers().selectionList = [];
     // TODO: Communicate which heroes got banned
     Wait(5, WaitBehavior.IgnoreCondition);
+    #phase no longer running
+    isPhaseActive = false;
     #Move on to next phase
     currentPhase = Phase.Normal;
 }
@@ -158,7 +178,16 @@ if (currentPhase == Phase.Normal)
     ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
     # Only allow the heroes in the pool
     SetAllowedHeroes(AllPlayers(), heroPool);
+    # Disable in-game announcer during reset to Assemble Heroes
+    DisableAnnouncer();
+    // Skip to game in progress momentarily to allow Assemble Heroes to work
+    while (!IsGameInProgress()) {
+        SetMatchTime(0);
+        MinWait();
+    }
     GoToAssembleHeroes();
+    MinWait();
+    EnableAnnouncer();
 }
 
 rule: "DEBUG: Set selectedList to random assortment of heroes from heroPool"
@@ -166,5 +195,5 @@ Event.OngoingPlayer
 if (IsButtonHeld(EventPlayer(), Button.Interact))
 if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
 {
-    EventPlayer().selectionList = ArraySlice(RandomizedArray(AllHeroes()), currentPhase == Phase.Protect ? numProtects : numBans);
+    EventPlayer().selectionList = ArraySlice(RandomizedArray(AllHeroes()),0 ,currentPhase == Phase.Protect ? numProtects : numBans);
 }
