@@ -1,0 +1,126 @@
+import "ScreenToWorld.del";
+import "ServerLoad.del";
+
+define menuPos: Vector(0, 150, 0);
+define menuFacing: Forward();
+globalvar define[] playersInMenu;
+
+define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? HeroIconString(AllHeroes()[n]) : IconString(Icon.No);
+
+rule: "[PlayerInterface.del] Global init"
+{
+    playersInMenu = [];
+    CreateInWorldText(
+        VisibleTo:          playersInMenu,
+        Header:             "Select hero",
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.25),
+        Scale:              4,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleTo,
+        TextColor:          Color.White
+    );
+    for (define i = 0; i < CountOf(AllHeroes()) / 8; i++) {
+        CreateInWorldText(
+            VisibleTo:          playersInMenu,
+            Header:             <"<0>  <1>  <2>  <3>", getNthHeroIcon(8*i+0), getNthHeroIcon(8*i+1), getNthHeroIcon(8*i+2), getNthHeroIcon(8*i+3)>,
+            Position:           ScreenToWorld(menuPos, menuFacing, -0.8, 0.7 - 0.5*i),
+            Scale:              3.5,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleTo,
+            TextColor:          Color.White
+        );
+        CreateInWorldText(
+            VisibleTo:          playersInMenu,
+            Header:             <"<0>  <1>  <2>  <3>", getNthHeroIcon(8*i+4), getNthHeroIcon(8*i+5), getNthHeroIcon(8*i+6), getNthHeroIcon(8*i+7)>,
+            Position:           ScreenToWorld(menuPos, menuFacing, 0.8, 0.7 - 0.5*i),
+            Scale:              3.5,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleTo,
+            TextColor:          Color.White
+        );
+    }
+}
+
+playervar define isInMenu;
+playervar define menuOriginalFacing;
+define cursorSens: 1.5;
+define cursorXRaw: cursorSens/5 * AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
+define cursorYRaw: cursorSens/5 * AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
+define menuXMin: -2.5;
+define menuXMax: 2.5;
+define menuYMin: -1.25;
+define menuYMax: 1.25;
+define cursorX: Max(menuXMin, Min(menuXMax, cursorXRaw));
+define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
+
+void DisallowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        DisallowButton(EventPlayer(), b);
+    }
+}
+
+void AllowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        AllowButton(EventPlayer(), b);
+    }
+}
+
+define allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
+
+
+rule: "[PlayerInterface.del] Force menu"
+Event.OngoingPlayer
+if(HasSpawned())
+{
+    isInMenu = true;
+}
+
+rule: "[PlayerInterface.del] Open menu"
+Event.OngoingPlayer
+if(isInMenu)
+{
+    StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
+    ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
+    DisableGameModeHud(EventPlayer());
+    DisableHeroHud(EventPlayer());
+    SetFacing(EventPlayer(), DirectionFromAngles(0,0));
+    menuOriginalFacing = FacingDirectionOf();
+    DisallowButtons(allButtons);
+    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
+    Teleport(EventPlayer(), Vector(0, 400, 0));
+    SetGravity(EventPlayer(), 0);
+    SetAimSpeed(EventPlayer(), 50);
+    makeCursor();
+}
+
+void makeCursor()
+{
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             "▲",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
+        Scale:              3,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndPosition,
+        TextColor:          TeamOf() == Team.Team1 ? Color.Team1 : Color.Team2
+    );
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             EventPlayer(),
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
+        Scale:              1.25,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndPosition,
+        TextColor:          Color.White
+    );
+}
+
+rule: "[PlayerInterface.del] Menu outer bounds"
+Event.OngoingPlayer
+if(isInMenu)
+if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax || cursorYRaw/2 < menuYMin )
+{
+    SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
+}
