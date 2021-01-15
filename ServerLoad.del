@@ -1,7 +1,7 @@
 import "Colors.del";
 import "AltFont.del";
 
-rule: "[ServerLoad.del] Track and show server load"
+disabled rule: "[ServerLoad.del] Track and show server load"
 {
     CreateHudText(
         Header:         AltFont(ServerLoadAverage()),

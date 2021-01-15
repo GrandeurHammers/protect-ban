@@ -2,35 +2,40 @@ import "ScreenToWorld.del";
 import "ServerLoad.del";
 import "ClickArea.del";
 
-/* COMPATIBILITY: Remove when merging */
-
-define heroPool: AllHeroes();
-
-/* COMPATIBILITY: Remove when merging */
-
+import "main.ostw";
 
 define menuPos: Vector(0, 150, 0);
 define menuFacing: Forward();
-globalvar define menuTitle = "Select hero(es)";
+globalvar define menuTitle = "Protect Phase - 10";
 globalvar define[] playersInMenu = [];
 
-define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroes()[n]) ? HeroIconString(AllHeroes()[n]) : IconString(Icon.No) : <" <0> ",IconString(Icon.RingThin)>;
+define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroes()[n]) ? HeroIconString(AllHeroes()[n]) : ArrayContains(protectedHeroes, AllHeroes()[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : <" <0> ",IconString(Icon.RingThin)>;
 globalvar ClickArea[] menuButtons = [];
 globalvar define[] menuTexts = [];
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
+    CreateEffect(
+        VisibleTo:          playersInMenu,
+        Type:               Effect.Orb,
+        Color:              Color.Black,
+        Position:           menuPos + -0.33 * menuFacing,
+        Radius:             1,
+        Reevaluation:       EffectRev.VisibleTo
+    );
     CreateInWorldText(
         VisibleTo:          playersInMenu,
-        Header:             menuTitle,
-        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.15),
+        Header:             selectTimeRemaining > 0 ?
+            <@"<0> Phase", currentPhase == Phase.Protect ? @"Protect" : @"Ban"> : 
+            "",
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.5),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
         TextColor:          Color.White
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
-    for (define i = 0; i < CountOf(AllHeroes()) / 8; i++) {
+    for (i = 0; i < CountOf(AllHeroes()) / 8; i++) {
         CreateInWorldText(
             VisibleTo:          playersInMenu,
             Header:             <"<0>  <1>  <2>  <3>", 
@@ -63,7 +68,7 @@ rule: "[PlayerInterface.del] Initialize menu"
         ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
     }
 
-    for (define i = 0; i < CountOf(AllHeroes()); i++) {
+    for (i = 0; i < CountOf(AllHeroes()); i++) {
         ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.75 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroes()[i]));
     }
 
@@ -87,7 +92,6 @@ void destroyMenu()
 
 playervar define isInMenu;
 playervar define menuOriginalFacing;
-playervar define selectionList;
 playervar define[] cursorTexts;
 playervar ClickArea hoveredButton;
 define cursorSens: 1.5;
@@ -104,7 +108,7 @@ Event.OngoingPlayer
 if(isInMenu)
 {
     define foundButton = false;
-    for(define i = 0; i < CountOf(menuButtons); i++) {
+    for(i = 0; i < CountOf(menuButtons); i++) {
         if (menuButtons[i].isHovered(cursorX, cursorY)) {
             hoveredButton = menuButtons[i];
             foundButton = true;
@@ -134,7 +138,7 @@ void AllowButtons(Button[] buttons)
 define allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
 
 
-rule: "[PlayerInterface.del] Force menu (debug)"
+disabled rule: "[PlayerInterface.del] Force menu (debug)"
 Event.OngoingPlayer
 if(HasSpawned())
 {
@@ -200,7 +204,7 @@ void makeCursor()
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
-                                hoveredButton == null ? 
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
                                     CustomColor(0,0,0,0) :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
@@ -217,7 +221,7 @@ void makeCursor()
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
-                                hoveredButton == null ? 
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
                                     CustomColor(0,0,0,0) :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
@@ -234,7 +238,7 @@ void makeCursor()
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
-                                hoveredButton == null ? 
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
                                     CustomColor(0,0,0,0) :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
@@ -251,7 +255,7 @@ void makeCursor()
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
-                                hoveredButton == null ? 
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
                                     CustomColor(0,0,0,0) :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
@@ -279,6 +283,8 @@ rule: "[PlayerInterface.del] Click logic"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsButtonHeld(EventPlayer(), Button.PrimaryFire))
+# If in a valid phase
+if (selectTimeRemaining > 0 && (currentPhase == Phase.Ban || currentPhase == Phase.Protect))
 {
     if(hoveredButton != null) {
         define clickedID = hoveredButton.clickID;
