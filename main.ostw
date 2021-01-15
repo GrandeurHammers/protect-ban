@@ -10,6 +10,7 @@ globalvar define protectedHeroes;
 globalvar define bannedHeroes;
 globalvar define resultsTally;
 globalvar define selectedHeroes;
+globalvar define toDestroyTexts;
 globalvar define i 127;
 
 playervar define selectionList;
@@ -52,6 +53,8 @@ if (IsWaitingForPlayers() == false)
     DisableAnnouncer();
     DisableMessages(AllPlayers());
     // TODO: Create HUDs
+    CreateProgressBarHudText(selectTimeRemaining > 0 ? AllPlayers() : null, selectTimeRemaining / timePerPhase * 100, <@"<0> Phase", currentPhase == Phase.Protect ? @"Protect" : @"Ban">, Location.Top, 5, Color.White, Color.White, ProgressBarEvaluation.VisibleToAndValues, Spectators.DefaultVisibility);
+    toDestroyTexts = [LastTextID()];
 }
 
 rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
@@ -96,7 +99,7 @@ if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
-    BigMessage(AllPlayers(), "Started Protect Phase");
+    BigMessage(AllPlayers(), <@"Started Protect Phase">);
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -109,7 +112,7 @@ if (currentPhase == Phase.Protect)
 if (isPhaseActive)
 if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProtects) || selectTimeRemaining == 0)
 {
-    BigMessage(AllPlayers(), "Tallying Votes for Protect Phase");
+    BigMessage(AllPlayers(), <@"Protect Phase Finished">);
     #Tally votes for heroes to protect
     TallyVotes();
     selectedHeroes = [];
@@ -132,7 +135,32 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
     #Reset player selection lists
     AllPlayers().selectionList = [];
     // TODO: Communicate which heroes got protected
-    Wait(5, WaitBehavior.IgnoreCondition);
+    CreateHudText(
+        VisibleTo: AllPlayers(),
+        Header: @"Protect:",
+        Location: Location.Left,
+        SortOrder: 0,
+        HeaderColor: Color.Yellow,
+        Reevaluation: HudTextRev.VisibleTo
+    );
+    ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    for (i = 0; CountOf(protectedHeroes) / 4; 1) {
+        CreateHudText(
+            VisibleTo: AllPlayers(),
+            Header: <"<0><1><2><3>",
+                EvaluateOnce(HeroIconString(protectedHeroes[4*i])),
+                EvaluateOnce(HeroIconString(protectedHeroes[4*i+1])),
+                EvaluateOnce(HeroIconString(protectedHeroes[4*i+2])),
+                EvaluateOnce(HeroIconString(protectedHeroes[4*i+3]))
+            >,
+            Location: Location.Left,
+            SortOrder: i+1,
+            HeaderColor: Color.White,
+            Reevaluation: HudTextRev.VisibleTo
+        );
+        ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    }
+    Wait(5);
     #phase no longer running
     isPhaseActive = false;
     #Move on to next phase
@@ -147,7 +175,7 @@ if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
-    BigMessage(AllPlayers(), "Started Ban Phase");
+    BigMessage(AllPlayers(), <@"Started Ban Phase">);
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -160,7 +188,7 @@ if (currentPhase == Phase.Ban)
 if (isPhaseActive)
 if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans) || selectTimeRemaining == 0)
 {
-    BigMessage(AllPlayers(), "Tallying Votes for Ban Phase");
+    BigMessage(AllPlayers(), <@"Finished Ban Phase">);
     #Tally votes for heroes to protect
     TallyVotes();
     selectedHeroes = [];
@@ -183,7 +211,32 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
     #Reset player selection lists
     AllPlayers().selectionList = [];
     // TODO: Communicate which heroes got banned
-    Wait(5, WaitBehavior.IgnoreCondition);
+    CreateHudText(
+        VisibleTo: AllPlayers(),
+        Header: @"Ban:",
+        Location: Location.Left,
+        SortOrder: numProtects,
+        HeaderColor: Color.Red,
+        Reevaluation: HudTextRev.VisibleTo
+    );
+    ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    for (i = 0; CountOf(bannedHeroes) / 4; 1) {
+        CreateHudText(
+            VisibleTo: AllPlayers(),
+            Header: <"<0><1><2><3>",
+                EvaluateOnce(HeroIconString(bannedHeroes[4*i])),
+                EvaluateOnce(HeroIconString(bannedHeroes[4*i+1])),
+                EvaluateOnce(HeroIconString(bannedHeroes[4*i+2])),
+                EvaluateOnce(HeroIconString(bannedHeroes[4*i+3]))
+            >,
+            Location: Location.Left,
+            SortOrder: numProtects+i+1,
+            HeaderColor: Color.White,
+            Reevaluation: HudTextRev.VisibleTo
+        );
+        ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    }
+    Wait(5);
     #phase no longer running
     isPhaseActive = false;
     #Move on to next phase
