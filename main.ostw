@@ -48,7 +48,9 @@ if (IsWaitingForPlayers() == false)
     } else {
         currentPhase = Phase.Normal;
     }
+    # Prevent normal game stuff from interfering
     DisableAnnouncer();
+    DisableMessages(AllPlayers());
     // TODO: Create HUDs
 }
 
@@ -71,6 +73,9 @@ Event.OngoingPlayer
     # If a hero pool has been decided, restrict the player to that pool
     if (currentPhase == Phase.Normal) {
         SetAllowedHeroes(EventPlayer(), heroPool);
+    # Otherwise, if we're doing protect/ban phases, disable normal game stuff to prevent issues
+    } else {
+        DisableMessages();
     }
 }
 
@@ -203,6 +208,7 @@ if (currentPhase == Phase.Normal)
     }
     Wait(0.25);
     EnableAnnouncer();
+    EnableMessages(AllPlayers());
     GoToAssembleHeroes();
 }
 
