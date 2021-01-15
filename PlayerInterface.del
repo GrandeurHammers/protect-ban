@@ -1,0 +1,311 @@
+import "ScreenToWorld.del";
+import "ServerLoad.del";
+import "ClickArea.del";
+
+import "main.ostw";
+
+define menuPos: Vector(0, 150, 0);
+define menuFacing: Forward();
+globalvar define menuTitle = "Protect Phase - 10";
+globalvar define[] playersInMenu = [];
+
+define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroes()[n]) ? HeroIconString(AllHeroes()[n]) : ArrayContains(protectedHeroes, AllHeroes()[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : <" <0> ",IconString(Icon.RingThin)>;
+globalvar ClickArea[] menuButtons = [];
+globalvar define[] menuTexts = [];
+
+rule: "[PlayerInterface.del] Initialize menu"
+{
+    CreateEffect(
+        VisibleTo:          playersInMenu,
+        Type:               Effect.Orb,
+        Color:              Color.Black,
+        Position:           menuPos + -0.33 * menuFacing,
+        Radius:             1,
+        Reevaluation:       EffectRev.VisibleTo
+    );
+    CreateInWorldText(
+        VisibleTo:          playersInMenu,
+        Header:             selectTimeRemaining > 0 ?
+            <@"<0> Phase", currentPhase == Phase.Protect ? @"Protect" : @"Ban"> : 
+            "",
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.5),
+        Scale:              3,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndString,
+        TextColor:          Color.White
+    );
+    ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
+    for (i = 0; i < CountOf(AllHeroes()) / 8; i++) {
+        CreateInWorldText(
+            VisibleTo:          playersInMenu,
+            Header:             <"<0>  <1>  <2>  <3>", 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+0), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+1), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+2), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+3)
+                                >,
+            Position:           ScreenToWorld(menuPos, menuFacing, -0.8, 0.7 - 0.5*i),
+            Scale:              3.5,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleToAndString,
+            TextColor:          Color.White
+        );
+        ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
+        CreateInWorldText(
+            VisibleTo:          playersInMenu,
+            Header:             <"<0>  <1>  <2>  <3>", 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+4), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+5), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+6), 
+                                    getNthHeroIcon(8*EvaluateOnce(i)+7)
+                                >,
+            Position:           ScreenToWorld(menuPos, menuFacing, 0.8, 0.7 - 0.5*i),
+            Scale:              3.5,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleToAndString,
+            TextColor:          Color.White
+        );
+        ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
+    }
+
+    for (i = 0; i < CountOf(AllHeroes()); i++) {
+        ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.75 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroes()[i]));
+    }
+
+    CreateInWorldText(
+        VisibleTo:          playersInMenu,
+        Header:             "Clear selection",
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, -1.35),
+        Scale:              2,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndString,
+        TextColor:          Color.Yellow
+    );
+    ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
+    ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(0, -1.35, 0.9, 0.15, "clear"));
+}
+
+void destroyMenu()
+{
+    foreach(define text in menuTexts) DestroyInWorldText(text);
+}
+
+playervar define isInMenu;
+playervar define menuOriginalFacing;
+playervar define[] cursorTexts;
+playervar ClickArea hoveredButton;
+define cursorSens: 1.5;
+define cursorXRaw: cursorSens/5 * AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
+define cursorYRaw: cursorSens/5 * AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
+define menuXMin: -2.5;
+define menuXMax: 2.5;
+define menuYMin: -1.5;
+define menuYMax: 1.25;
+define cursorX: Max(menuXMin, Min(menuXMax, cursorXRaw));
+define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
+rule: "[PlayerInterface.del] Update hovered button"
+Event.OngoingPlayer
+if(isInMenu)
+{
+    define foundButton = false;
+    for(i = 0; i < CountOf(menuButtons); i++) {
+        if (menuButtons[i].isHovered(cursorX, cursorY)) {
+            hoveredButton = menuButtons[i];
+            foundButton = true;
+            break;
+        }
+    }
+    if(!foundButton) hoveredButton = null;
+    MinWait();
+    LoopIfConditionIsTrue();
+}
+
+
+void DisallowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        DisallowButton(EventPlayer(), b);
+    }
+}
+
+void AllowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        AllowButton(EventPlayer(), b);
+    }
+}
+
+define allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
+
+
+disabled rule: "[PlayerInterface.del] Force menu (debug)"
+Event.OngoingPlayer
+if(HasSpawned())
+{
+    isInMenu = true;
+}
+
+rule: "[PlayerInterface.del] Menu open/close"
+Event.OngoingPlayer
+if(isInMenu)
+{
+    StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
+    ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
+    DisableHeroHud(EventPlayer());
+    SetFacing(EventPlayer(), DirectionFromAngles(0,0));
+    menuOriginalFacing = FacingDirectionOf();
+    DisallowButtons(allButtons);
+    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
+    Teleport(EventPlayer(), Vector(0, 400, 0));
+    SetGravity(EventPlayer(), 0);
+    SetAimSpeed(EventPlayer(), 50);
+    makeCursor();
+
+    WaitUntil(!isInMenu, 9999);
+    ModifyVariable(playersInMenu, Operation.RemoveFromArrayByValue, EventPlayer());
+    EnableHeroHud(EventPlayer());
+    AllowButtons(allButtons);
+    StopForcingThrottle(EventPlayer());
+    SetGravity(EventPlayer(), 100);
+    SetAimSpeed(EventPlayer(), 100);
+    destroyCursor();
+    StopCamera(EventPlayer());
+    Respawn(EventPlayer());
+}
+
+void makeCursor()
+{
+    CreateInWorldText(
+        VisibleTo:          playersInMenu,
+        Header:             "▲",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
+        Scale:              3,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndPosition,
+        TextColor:          TeamOf() == Team.Team1 ? Color.Team1 : Color.Team2
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          playersInMenu,
+        Header:             EventPlayer(),
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
+        Scale:              1.25,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndPosition,
+        TextColor:          Color.White
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             "┌",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX - hoveredButton.sizeX/2, hoveredButton.centerY + hoveredButton.sizeY/2)),
+        Scale:              2.5,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
+        TextColor:          UpdateEveryFrame(
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
+                                    CustomColor(0,0,0,0) :
+                                    ArrayContains(heroPool, hoveredButton.clickID) ?
+                                        ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
+                                        Color.Green :
+                                    Color.White
+                            )
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             "┐",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX + hoveredButton.sizeX/2, hoveredButton.centerY + hoveredButton.sizeY/2)),
+        Scale:              2.5,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
+        TextColor:          UpdateEveryFrame(
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
+                                    CustomColor(0,0,0,0) :
+                                    ArrayContains(heroPool, hoveredButton.clickID) ?
+                                        ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
+                                        Color.Green :
+                                    Color.White
+                            )
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             "└",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX - hoveredButton.sizeX/2, hoveredButton.centerY - hoveredButton.sizeY/2)),
+        Scale:              2.5,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
+        TextColor:          UpdateEveryFrame(
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
+                                    CustomColor(0,0,0,0) :
+                                    ArrayContains(heroPool, hoveredButton.clickID) ?
+                                        ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
+                                        Color.Green :
+                                    Color.White
+                            )
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          EventPlayer(),
+        Header:             "┘",
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX + hoveredButton.sizeX/2, hoveredButton.centerY - hoveredButton.sizeY/2)),
+        Scale:              2.5,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
+        TextColor:          UpdateEveryFrame(
+                                hoveredButton == null || selectTimeRemaining == 0 ? 
+                                    CustomColor(0,0,0,0) :
+                                    ArrayContains(heroPool, hoveredButton.clickID) ?
+                                        ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
+                                        Color.Green :
+                                    Color.White
+                            )
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+}
+
+void destroyCursor()
+{
+    foreach(define text in cursorTexts) DestroyInWorldText(text);
+}
+
+rule: "[PlayerInterface.del] Menu outer bounds"
+Event.OngoingPlayer
+if(isInMenu)
+if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax || cursorYRaw/2 < menuYMin )
+{
+    SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
+}
+
+rule: "[PlayerInterface.del] Click logic"
+Event.OngoingPlayer
+if(isInMenu)
+if(IsButtonHeld(EventPlayer(), Button.PrimaryFire))
+# If in a valid phase
+if (selectTimeRemaining > 0 && (currentPhase == Phase.Ban || currentPhase == Phase.Protect))
+{
+    if(hoveredButton != null) {
+        define clickedID = hoveredButton.clickID;
+        if(ArrayContains(AllHeroes(), clickedID)) {
+            if(ArrayContains(heroPool, clickedID)) {
+                if(ArrayContains(selectionList, clickedID)) {
+                    ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
+                    PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+                }
+                else {
+                    ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
+                    PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
+                }
+            }
+            else {
+                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+            }
+        }
+        else if(clickedID == "clear") {
+            selectionList = [];
+            PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
+        }
+    }
+}
