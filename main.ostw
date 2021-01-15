@@ -127,7 +127,8 @@ rule: "Handle conditional player enable/disables"
 Event.OngoingPlayer
 if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
 {
-    StartForcingPlayerPosition(EventPlayer(), Vector(0,50,0), true);
+    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
+    SetGravity(EventPlayer(), 0);
     SetInvisible(InvisibleTo: InvisibleTo.All);
     DisableMovementCollisionWithEnvironment();
     DisableMovementCollisionWithPlayers();
@@ -138,8 +139,9 @@ if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
 
     WaitUntil(currentPhase != Phase.Protect && currentPhase != Phase.Ban, 1000000);
     Wait(1);
-
-    StopForcingPlayerPosition(EventPlayer());
+    
+    StopForcingThrottle(EventPlayer());
+    SetGravity(EventPlayer(), 100);
     SetInvisible(InvisibleTo: InvisibleTo.None);
     EnableMovementCollisionWithEnvironment();
     EnableMovementCollisionWithPlayers();

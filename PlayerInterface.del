@@ -8,8 +8,10 @@ define menuPos: Vector(0, 150, 0);
 define menuFacing: Forward();
 globalvar define menuTitle = "Protect Phase - 10";
 globalvar define[] playersInMenu = [];
+define AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
 
-define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroes()[n]) ? HeroIconString(AllHeroes()[n]) : ArrayContains(protectedHeroes, AllHeroes()[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : <" <0> ",IconString(Icon.RingThin)>;
+define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroesOrdered[n]) ? HeroIconString(AllHeroesOrdered[n]) : 
+    ArrayContains(protectedHeroes, AllHeroesOrdered[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : IconString(Icon.RingThin);
 globalvar ClickArea[] menuButtons = [];
 globalvar define[] menuTexts = [];
 
@@ -35,7 +37,7 @@ rule: "[PlayerInterface.del] Initialize menu"
         TextColor:          Color.White
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
-    for (i = 0; i < CountOf(AllHeroes()) / 8; i++) {
+    for (i = 0; i < CountOf(AllHeroesOrdered) / 8; i++) {
         CreateInWorldText(
             VisibleTo:          playersInMenu,
             Header:             <"<0>  <1>  <2>  <3>", 
@@ -44,7 +46,7 @@ rule: "[PlayerInterface.del] Initialize menu"
                                     getNthHeroIcon(8*EvaluateOnce(i)+2), 
                                     getNthHeroIcon(8*EvaluateOnce(i)+3)
                                 >,
-            Position:           ScreenToWorld(menuPos, menuFacing, -0.8, 0.7 - 0.5*i),
+            Position:           ScreenToWorld(menuPos, menuFacing, -0.8, 0.8 - 0.5*i),
             Scale:              3.5,
             Clipping:           Clipping.DoNotClip,
             Reevaluation:       InworldTextRev.VisibleToAndString,
@@ -59,7 +61,7 @@ rule: "[PlayerInterface.del] Initialize menu"
                                     getNthHeroIcon(8*EvaluateOnce(i)+6), 
                                     getNthHeroIcon(8*EvaluateOnce(i)+7)
                                 >,
-            Position:           ScreenToWorld(menuPos, menuFacing, 0.8, 0.7 - 0.5*i),
+            Position:           ScreenToWorld(menuPos, menuFacing, 0.8, 0.8 - 0.5*i),
             Scale:              3.5,
             Clipping:           Clipping.DoNotClip,
             Reevaluation:       InworldTextRev.VisibleToAndString,
@@ -68,21 +70,21 @@ rule: "[PlayerInterface.del] Initialize menu"
         ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
     }
 
-    for (i = 0; i < CountOf(AllHeroes()); i++) {
-        ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.75 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroes()[i]));
+    for (i = 0; i < CountOf(AllHeroesOrdered); i++) {
+        ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.85 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroesOrdered[i]));
     }
 
     CreateInWorldText(
         VisibleTo:          playersInMenu,
         Header:             "Clear selection",
-        Position:           ScreenToWorld(menuPos, menuFacing, 0, -1.35),
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, -1.2),
         Scale:              2,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
         TextColor:          Color.Yellow
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
-    ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(0, -1.35, 0.9, 0.15, "clear"));
+    ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(0, -1.2, 0.9, 0.15, "clear"));
 }
 
 void destroyMenu()
@@ -152,12 +154,8 @@ if(isInMenu)
     StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
     DisableHeroHud(EventPlayer());
-    SetFacing(EventPlayer(), DirectionFromAngles(0,0));
     menuOriginalFacing = FacingDirectionOf();
     DisallowButtons(allButtons);
-    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
-    Teleport(EventPlayer(), Vector(0, 400, 0));
-    SetGravity(EventPlayer(), 0);
     SetAimSpeed(EventPlayer(), 50);
     makeCursor();
 
@@ -165,12 +163,18 @@ if(isInMenu)
     ModifyVariable(playersInMenu, Operation.RemoveFromArrayByValue, EventPlayer());
     EnableHeroHud(EventPlayer());
     AllowButtons(allButtons);
-    StopForcingThrottle(EventPlayer());
-    SetGravity(EventPlayer(), 100);
     SetAimSpeed(EventPlayer(), 100);
     destroyCursor();
     StopCamera(EventPlayer());
-    Respawn(EventPlayer());
+}
+
+rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
+Event.OngoingPlayer
+if(isInMenu)
+if(IsInSpawnRoom())
+if(CurrentGameMode() != GameMode.Control)
+{
+    Teleport(EventPlayer(), Vector(0, 250, 0));
 }
 
 void makeCursor()
