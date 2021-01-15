@@ -1,0 +1,21 @@
+{
+  "Modes": {
+    "All": {
+      "Game Mode Start": "Immediately",
+      "Limit Roles": "2 Of Each Role Per Team"
+    },
+    "Assault": {
+      "Competitive Rules": true
+    },
+    "Control": {
+      "Competitive Rules": true,
+      "Score To Win": 2
+    },
+    "Escort": {
+      "Competitive Rules": true
+    },
+    "Hybrid": {
+      "Competitive Rules": true
+    }
+  }
+}
