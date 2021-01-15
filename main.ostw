@@ -10,7 +10,7 @@ globalvar define protectedHeroes;
 globalvar define bannedHeroes;
 globalvar define resultsTally;
 globalvar define selectedHeroes;
-globalvar define toDestroyTexts;
+globalvar define textsToDestroy;
 globalvar define i 127;
 
 playervar define selectionList;
@@ -54,7 +54,7 @@ if (IsWaitingForPlayers() == false)
     DisableMessages(AllPlayers());
     // TODO: Create HUDs
     CreateProgressBarHudText(selectTimeRemaining > 0 ? AllPlayers() : null, selectTimeRemaining / timePerPhase * 100, <@"<0> Phase", currentPhase == Phase.Protect ? @"Protect" : @"Ban">, Location.Top, 5, Color.White, Color.White, ProgressBarEvaluation.VisibleToAndValues, Spectators.DefaultVisibility);
-    toDestroyTexts = [LastTextID()];
+    textsToDestroy = [LastTextID()];
 }
 
 rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
@@ -143,7 +143,7 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
         HeaderColor: Color.Yellow,
         Reevaluation: HudTextRev.VisibleTo
     );
-    ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     for (i = 0; CountOf(protectedHeroes) / 4; 1) {
         CreateHudText(
             VisibleTo: AllPlayers(),
@@ -158,7 +158,7 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
             HeaderColor: Color.White,
             Reevaluation: HudTextRev.VisibleTo
         );
-        ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
     Wait(5);
     #phase no longer running
@@ -219,7 +219,7 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
         HeaderColor: Color.Red,
         Reevaluation: HudTextRev.VisibleTo
     );
-    ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     for (i = 0; CountOf(bannedHeroes) / 4; 1) {
         CreateHudText(
             VisibleTo: AllPlayers(),
@@ -234,7 +234,7 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
             HeaderColor: Color.White,
             Reevaluation: HudTextRev.VisibleTo
         );
-        ModifyVariable(toDestroyTexts, Operation.AppendToArray, LastTextID());
+        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
     Wait(5);
     #phase no longer running
