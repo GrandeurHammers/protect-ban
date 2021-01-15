@@ -33,7 +33,6 @@ void TallyVotes() "[SUB] Count up number of votes for each hero"
     for (i = 0; CountOf(AllHeroes()); 1) {
         resultsTally[i] = CountOf(FilteredArray(AllPlayers(), ArrayContains(ArrayElement().selectionList, AllHeroes()[i])));
     }
-    resultsTally = SortedArray(AllHeroes(), resultsTally[CurrentArrayIndex()]);
 }
 
 rule: "Global setup"
@@ -107,8 +106,16 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
     BigMessage(AllPlayers(), "Tallying Votes for Protect Phase");
     #Tally votes for heroes to protect
     TallyVotes();
-    #Select the numProtects most voted heroes
-    selectedHeroes = ArraySlice(resultsTally, CountOf(resultsTally) - numProtects, numProtects);
+    selectedHeroes = [];
+    //Select the numProtects most voted heroes
+    while (CountOf(selectedHeroes) < numProtects) {
+        # Get largest number of votes
+        i = LastOf(SortedArray(resultsTally));
+        # Add as many heroes as permissible which have that number of votes
+        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, numProtects - CountOf(selectedHeroes)));
+        # Invalidate current largest number of votes
+        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
+    }
     #Remove protected heroes from the hero pool (for banning purposes)
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
     #Remember which heroes got protected so we can add them back to the hero pool after banning
@@ -150,8 +157,16 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
     BigMessage(AllPlayers(), "Tallying Votes for Ban Phase");
     #Tally votes for heroes to protect
     TallyVotes();
-    #Select the numBans most voted heroes
-    selectedHeroes = ArraySlice(resultsTally, CountOf(resultsTally) - numBans, numBans);
+    selectedHeroes = [];
+    //Select the numBans most voted heroes
+    while (CountOf(selectedHeroes) < numBans) {
+        # Get largest number of votes
+        i = LastOf(SortedArray(resultsTally));
+        # Add as many heroes as permissible which have that number of votes
+        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, numBans - CountOf(selectedHeroes)));
+        # Invalidate current largest number of votes
+        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
+    }
     #Remove banned heroes from the hero pool
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
     #Remember which heroes got banned
