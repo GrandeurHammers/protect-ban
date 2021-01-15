@@ -1,8 +1,9 @@
 import "customGameSettings.lobby";
 
-globalvar define numProtects;
-globalvar define numBans;
-globalvar define timePerPhase;
+globalvar define numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects", 1, 0, 15, 1);
+globalvar define numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans", 1, 0, 15, 0);
+globalvar define timePerPhase = WorkshopSettingInteger("Pick/Ban", "Time Limit Per Phase", 20, 5, 120, 2);
+globalvar define globalCursors = WorkshopSettingToggle("Menu Options", "See All Cursors", true, 0);
 // END CUSTOMIZATION
 globalvar Phase currentPhase;
 globalvar define isPhaseActive;
@@ -24,13 +25,6 @@ enum Phase {
     Ban = 2,
     Normal = 3
 } 
-
-rule: "Customization Workshop Settings" 
-{
-    numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects", 1, 0, 15, 1);
-    numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans", 1, 0, 15, 0);
-    timePerPhase = WorkshopSettingInteger("Pick/Ban", "Time Limit Per Phase", 20, 5, 120, 2);
-}
 
 void TallyVotes() "[SUB] Count up number of votes for each hero"
 {
@@ -350,6 +344,8 @@ if (currentPhase == Phase.Normal)
         DestroyHudText(textsToDestroy[i]);
     }
     textsToDestroy = [];
+    # Clean up the menu
+    destroyMenu();
 }
 
 disabled rule: "DEBUG: Add current hero to selectionList"

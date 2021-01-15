@@ -176,7 +176,7 @@ if(isInMenu)
 void makeCursor()
 {
     CreateInWorldText(
-        VisibleTo:          playersInMenu,
+        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
         Header:             "▲",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
         Scale:              3,
@@ -186,7 +186,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          playersInMenu,
+        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
         Header:             EventPlayer(),
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
         Scale:              1.25,
