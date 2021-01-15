@@ -1,0 +1,51 @@
+import "ScreenToWorld.del";
+
+class ClickArea {
+    public define centerX;
+    public define centerY;
+    public define sizeX;
+    public define sizeY;
+    public define clickID;
+
+    public ClickArea(define CenterX, define CenterY, define SizeX, define SizeY, define ClickID) {
+        centerX = CenterX;
+        centerY = CenterY;
+        sizeX   = SizeX;
+        sizeY   = SizeY;
+        clickID = ClickID;
+    }
+
+    public define isHovered(define cursorX, define cursorY): AbsoluteValue(cursorX-centerX) <= sizeX/2 && 
+                                                             AbsoluteValue(cursorY-centerY) <= sizeY/2;
+
+    /*
+    public void showClickArea(define camPos, define camDir) {
+        CreateInWorldText(
+            VisibleTo:          TotalTimeElapsed() % 1 > 0.01 ? AllPlayers() : null,
+            Header:             "•",
+            Position:           root.ScreenToWorld(camPos, camDir, centerX, centerY),
+            Scale:              2,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleTo,
+            TextColor:          Color.Yellow
+        );
+        CreateInWorldText(
+            VisibleTo:          TotalTimeElapsed() % 1 > 0.01 ? AllPlayers() : null,
+            Header:             "┌",
+            Position:           root.ScreenToWorld(camPos, camDir, centerX - sizeX/2, centerY + sizeY/2),
+            Scale:              2,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleTo,
+            TextColor:          Color.Yellow
+        );
+        CreateInWorldText(
+            VisibleTo:          TotalTimeElapsed() % 1 > 0.01 ? AllPlayers() : null,
+            Header:             "┘",
+            Position:           root.ScreenToWorld(camPos, camDir, centerX + sizeX/2, centerY - sizeY/2),
+            Scale:              2,
+            Clipping:           Clipping.DoNotClip,
+            Reevaluation:       InworldTextRev.VisibleTo,
+            TextColor:          Color.Yellow
+        );
+    }*/
+}

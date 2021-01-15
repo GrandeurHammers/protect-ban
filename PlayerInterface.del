@@ -1,20 +1,28 @@
 import "ScreenToWorld.del";
 import "ServerLoad.del";
+import "ClickArea.del";
+
+/* COMPATIBILITY: Remove when merging */
+
+define heroPool: AllHeroes();
+
+/* COMPATIBILITY: Remove when merging */
+
 
 define menuPos: Vector(0, 150, 0);
 define menuFacing: Forward();
-globalvar define[] playersInMenu;
+globalvar define[] playersInMenu = [];
 
-define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? HeroIconString(AllHeroes()[n]) : IconString(Icon.No);
+define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroes()[n]) ? HeroIconString(AllHeroes()[n]) : IconString(Icon.No) : IconString(Icon.RingThin);
+globalvar ClickArea[] menuButtons = [];
 
-rule: "[PlayerInterface.del] Global init"
+rule: "[PlayerInterface.del] Initialize menu"
 {
-    playersInMenu = [];
     CreateInWorldText(
         VisibleTo:          playersInMenu,
-        Header:             "Select hero",
-        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.25),
-        Scale:              4,
+        Header:             "Select hero(es)",
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.15),
+        Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleTo,
         TextColor:          Color.White
@@ -39,10 +47,15 @@ rule: "[PlayerInterface.del] Global init"
             TextColor:          Color.White
         );
     }
+    for (define i = 0; i < CountOf(AllHeroes()); i++) {
+        ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.75 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroes()[i]));
+    }
 }
 
 playervar define isInMenu;
 playervar define menuOriginalFacing;
+playervar define selectionList;
+playervar define[] cursorTexts;
 define cursorSens: 1.5;
 define cursorXRaw: cursorSens/5 * AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
 define cursorYRaw: cursorSens/5 * AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
@@ -52,6 +65,7 @@ define menuYMin: -1.25;
 define menuYMax: 1.25;
 define cursorX: Max(menuXMin, Min(menuXMax, cursorXRaw));
 define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
+ClickArea hoveredButton: FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0];
 
 void DisallowButtons(Button[] buttons)
 {
@@ -77,13 +91,12 @@ if(HasSpawned())
     isInMenu = true;
 }
 
-rule: "[PlayerInterface.del] Open menu"
+rule: "[PlayerInterface.del] Menu open/close"
 Event.OngoingPlayer
 if(isInMenu)
 {
     StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
-    DisableGameModeHud(EventPlayer());
     DisableHeroHud(EventPlayer());
     SetFacing(EventPlayer(), DirectionFromAngles(0,0));
     menuOriginalFacing = FacingDirectionOf();
@@ -93,6 +106,17 @@ if(isInMenu)
     SetGravity(EventPlayer(), 0);
     SetAimSpeed(EventPlayer(), 50);
     makeCursor();
+
+    WaitUntil(!isInMenu, 9999);
+    ModifyVariable(playersInMenu, Operation.RemoveFromArrayByValue, EventPlayer());
+    EnableHeroHud(EventPlayer());
+    AllowButtons(allButtons);
+    StopForcingThrottle(EventPlayer());
+    SetGravity(EventPlayer(), 100);
+    SetAimSpeed(EventPlayer(), 100);
+    destroyCursor();
+    StopCamera(EventPlayer());
+    Respawn(EventPlayer());
 }
 
 void makeCursor()
@@ -106,6 +130,7 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToAndPosition,
         TextColor:          TeamOf() == Team.Team1 ? Color.Team1 : Color.Team2
     );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
         VisibleTo:          EventPlayer(),
         Header:             EventPlayer(),
@@ -115,6 +140,12 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToAndPosition,
         TextColor:          Color.White
     );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+}
+
+void destroyCursor()
+{
+    foreach(define text in cursorTexts) DestroyInWorldText(text);
 }
 
 rule: "[PlayerInterface.del] Menu outer bounds"
@@ -123,4 +154,11 @@ if(isInMenu)
 if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax || cursorYRaw/2 < menuYMin )
 {
     SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
+}
+
+rule: "[PlayerInterface.del] Click logic"
+Event.OngoingPlayer
+if(isInMenu)
+{
+
 }
