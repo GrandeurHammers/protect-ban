@@ -2,10 +2,12 @@ import "ScreenToWorld.del";
 import "ServerLoad.del";
 import "ClickArea.del";
 
+import "MapData.del";
+
 import "main.ostw";
 
-define menuPos: Vector(0, 150, 0);
-define menuFacing: Forward();
+globalvar define menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
+globalvar define menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
 globalvar define menuTitle = "Protect Phase - 10";
 globalvar define[] playersInMenu = [];
 define AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());

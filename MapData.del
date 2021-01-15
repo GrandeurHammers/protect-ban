@@ -1,0 +1,32 @@
+define maps: [Map.Hanamura, Map.Hanamura_Winter, Map.Horizon_Lunar_Colony, Map.Paris, Map.Temple_of_Anubis, Map.Volskaya_Industries, Map.Busan, Map.Ilios, Map.Lijiang_Tower,
+              Map.Lijiang_Tower_Lunar, Map.Nepal, Map.Oasis, Map.Dorado, Map.Havana, Map.Junkertown, Map.Rialto, Map.Route_66, Map.Watchpoint_Gibraltar, Map.Blizzard_World,
+              Map.Blizzard_World_Winter, Map.Eichenwalde, Map.Eichenwalde_Halloween, Map.Hollywood, Map.Hollywood_Halloween, Map.Kings_Row, Map.Kings_Row_Winter, Map.Numbani];
+
+//                menuPos                           menuFacing                        Map
+define mapData: [[Vector(66.17, 35.00, -17.23),     Vector(-0.93, -0.12, -0.34)],   //Map.Hanamura
+                 [Vector(66.17, 35.00, -17.23),     Vector(-0.93, -0.12, -0.34)],   //Map.Hanamura_Winter
+                 [Vector(119.22, 54.45, -177.49),   Vector(-0.95, 0.06, 0.29)],     //Map.Horizon_Lunar_Colony 
+                 [Vector(47.29, 81.48, -57.53),     Vector(-0.57, -0.12, 0.81)],    //Map.Paris
+                 [Vector(11.43, 40.75, 24.17),      Vector(-0.70, 0.12, 0.70)],     //Map.Temple_of_Anubis
+                 [Vector(44.55, 48.40, 21.07),      Vector(-0.75, -0.17, 0.63)],    //Map.Volskaya_Industries
+                 [Vector(-474.42, 160.48, 249.32),  Vector(0.77, -0.38, -0.51)],    //Map.Busan
+                 [Vector(-0.67, 118.81, -101.62),   Vector(-0.32, -0.32, -0.89)],   //Map.Ilios
+                 [Vector(296.75, 454.00, 294.12),   Vector(-0.75, -0.36, -0.55)],   //Map.Lijiang_Tower
+                 [Vector(296.75, 454.00, 294.12),   Vector(-0.75, -0.36, -0.55)],   //Map.Lijiang_Tower_Lunar
+                 [Vector(-26.20, 134.04, 71.93),    Vector(0.45, 0.16, -0.88)],     //Map.Nepal
+                 [Vector(273.56, 75.23, -305.65),   Vector(-0.95, 0.12, 0.29)],     //Map.Oasis
+                 [Vector(-208.36, 136.67, 17.61),   Vector(0.92, -0.15, 0.37)],     //Map.Dorado
+                 [Vector(135.21, 45.89, -145.15),   Vector(-0.39, -0.10, 0.92)],    //Map.Havana
+                 [Vector(64.26, 43.44, -116.45),    Vector(-0.96, -0.21, 0.18)],    //Map.Junkertown
+                 [Vector(41.28, 28.81, -82.05),     Vector(-0.68, 0.02, 0.74)],     //Map.Rialto
+                 [Vector(76.02, 40.67, 54.49),      Vector(-0.59, -0.09, -0.80)],   //Map.Route_66
+                 [Vector(153.26, 71.52, 115.42),    Vector(-0.14, -0.24, -0.96)],   //Map.Watchpoint_Gibraltar
+                 [Vector(-48.92, 86.67, -3.29),     Vector(0.40, -0.35, 0.85)],     //Map.Blizzard_World
+                 [Vector(-48.92, 86.67, -3.29),     Vector(0.40, -0.35, 0.85)],     //Map.Blizzard_World_Winter
+                 [Vector(-91.27, 52.48, -92.22),    Vector(0.84, -0.21, 0.49)],     //Map.Eichenwalde
+                 [Vector(-91.27, 52.48, -92.22),    Vector(0.84, -0.21, 0.49)],     //Map.Eichenwalde_Halloween
+                 [Vector(-32.77, 28.55, 70.23),     Vector(-0.72, -0.06, -0.69)],   //Map.Hollywood
+                 [Vector(-32.77, 28.55, 70.23),     Vector(-0.72, -0.06, -0.69)],   //Map.Hollywood_Halloween
+                 [Vector(-4.97, 31.27, -2.72),      Vector(-0.60, 0.18, -0.78)],    //Map.Kings_Row
+                 [Vector(-4.97, 31.27, -2.72),      Vector(-0.60, 0.18, -0.78)],    //Map.Kings_Row_Winter
+                 [Vector(114.11, -1.69, -41.11),    Vector(-1.00, 0.02, -0.09)]];   //Map.Numbani
