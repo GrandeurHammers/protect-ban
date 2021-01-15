@@ -48,6 +48,7 @@ if (IsWaitingForPlayers() == false)
     } else {
         currentPhase = Phase.Normal;
     }
+    DisableAnnouncer();
     // TODO: Create HUDs
 }
 
@@ -200,9 +201,9 @@ if (currentPhase == Phase.Normal)
         SetMatchTime(0);
         MinWait();
     }
-    GoToAssembleHeroes();
-    MinWait();
+    Wait(0.25);
     EnableAnnouncer();
+    GoToAssembleHeroes();
 }
 
 rule: "DEBUG: Set selectedList to random assortment of heroes from heroPool"
