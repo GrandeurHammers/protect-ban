@@ -22,8 +22,8 @@ enum Phase {
 
 rule: "Customization Workshop Settings" 
 {
-    numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects Per Team", 1, 0, 15, 1);
-    numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans Per Team", 1, 0, 15, 0);
+    numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects", 1, 0, 15, 1);
+    numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans", 1, 0, 15, 0);
     timePerPhase = WorkshopSettingInteger("Pick/Ban", "Time Limit Per Phase", 20, 5, 120, 2);
 }
 
