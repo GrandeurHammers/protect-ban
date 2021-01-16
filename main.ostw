@@ -213,7 +213,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 rule: "End of protect phase"
 if (currentPhase == Phase.Protect)
 if (isPhaseActive)
-if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProtects) || selectTimeRemaining == 0)
+if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == maxProtectVotes))
+    || selectTimeRemaining == 0)
 {
     BigMessage(AllPlayers(), <@"Protect Phase Finished">);
     #Tally votes for heroes to protect
@@ -289,7 +290,7 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 rule: "End of ban phase"
 if (currentPhase == Phase.Ban)
 if (isPhaseActive)
-if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans) || selectTimeRemaining == 0)
+if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == maxBanVotes)) || selectTimeRemaining == 0)
 {
     BigMessage(AllPlayers(), <@"Finished Ban Phase">);
     #Tally votes for heroes to protect
