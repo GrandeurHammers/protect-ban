@@ -428,6 +428,7 @@ if (currentPhase == Phase.Normal)
     ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
     # Only allow the heroes in the pool
     SetAllowedHeroes(AllPlayers(), heroPool);
+    async CleanupTexts();
     # Disable in-game announcer during reset to Assemble Heroes
     DisableAnnouncer();
     # Disable messages during reset to Assemble Heroes
@@ -443,6 +444,9 @@ if (currentPhase == Phase.Normal)
     EnableAnnouncer();
     Wait(3);
     EnableMessages(AllPlayers());
+}
+
+void CleanupTexts() "[SUB] Clean up protect/ban texts" {
     WaitUntil(IsGameInProgress(), 9999);
     for (i = 0; CountOf(textsToDestroy); 1) {
         DestroyHudText(textsToDestroy[i]);
