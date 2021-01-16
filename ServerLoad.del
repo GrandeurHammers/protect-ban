@@ -1,7 +1,8 @@
 import "Colors.del";
 import "AltFont.del";
 
-disabled rule: "[ServerLoad.del] Track and show server load"
+rule: "[ServerLoad.del] Track and show server load"
+if (WorkshopSettingToggle("Debug", "Show Server Load", false, 0))
 {
     CreateHudText(
         Header:         AltFont(ServerLoadAverage()),
@@ -9,7 +10,7 @@ disabled rule: "[ServerLoad.del] Track and show server load"
         Text:           AltFont("Average"),
         Location:       Location.Right,
         HeaderColor:    Gradient(ColorValues(0, 230, 151), ColorValues(236, 153, 0), ServerLoadAverage()/255),
-        SortOrder:      -10,
+        SortOrder:      -100,
         Reevaluation:   HudTextRev.VisibleToStringAndColor,
         Spectators:     Spectators.VisibleAlways
     );

@@ -112,6 +112,7 @@ define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
 rule: "[PlayerInterface.del] Update hovered button"
 Event.OngoingPlayer
 if(isInMenu)
+if(WorkshopSettingToggle("Menu Options", "Show Selection on Hover", true, 1))
 {
     define foundButton = false;
     for(i = 0; i < CountOf(menuButtons); i++) {

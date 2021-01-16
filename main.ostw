@@ -1,9 +1,16 @@
 import "customGameSettings.lobby";
 
-globalvar define numProtects = WorkshopSettingInteger("Pick/Ban", "Hero Protects", 1, 0, 15, 1);
-globalvar define numBans = WorkshopSettingInteger("Pick/Ban", "Hero Bans", 1, 0, 15, 0);
-globalvar define timePerPhase = WorkshopSettingInteger("Pick/Ban", "Time Limit Per Phase", 20, 5, 120, 2);
+globalvar define numProtects = WorkshopSettingInteger("Protect/Ban", "Hero Protects", 1, 0, 15, 2);
+globalvar define numBans = WorkshopSettingInteger("Protect/Ban", "Hero Bans", 1, 0, 15, 0);
+globalvar define timePerPhase = WorkshopSettingInteger("Protect/Ban", "Time Limit Per Phase", 20, 5, 120, 9.9);
+globalvar define maxProtectVotes = WorkshopSettingInteger("Protect/Ban", "Protect Votes Per Player", 2, 1, 15, 3);
+globalvar define maxBanVotes = WorkshopSettingInteger("Protect/Ban", "Ban Votes Per Player", 2, 1, 15, 1);
 globalvar define globalCursors = WorkshopSettingToggle("Menu Options", "See All Cursors", true, 0);
+globalvar define losingTeam = WorkshopSettingCombo("Protect/Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
+globalvar define losingTeamBans = WorkshopSettingInteger("Protect/Ban", "Extra Bans", 1, 1, 15, 11);
+globalvar define losingTeamBanVotes = WorkshopSettingInteger("Protect/Ban", "Extra Ban Votes Per Player", 2, 1, 15, 12);
+globalvar define progressOnMaxVotes = WorkshopSettingToggle("Protect/Ban", "Skip Timer When All Players Have Max Selections", true, 100);
+globalvar define allowRepeatHeroVotes = WorkshopSettingToggle("Protect/Ban", "Allow Repeat Votes For Same Hero", false, 20);
 // END CUSTOMIZATION
 globalvar Phase currentPhase;
 globalvar define isPhaseActive;
@@ -14,6 +21,7 @@ globalvar define bannedHeroes;
 globalvar define resultsTally;
 globalvar define selectedHeroes;
 globalvar define textsToDestroy;
+globalvar define waitingText;
 globalvar define i 127;
 
 playervar define selectionList;
@@ -32,6 +40,27 @@ void TallyVotes() "[SUB] Count up number of votes for each hero"
     for (i = 0; CountOf(AllHeroes()); 1) {
         resultsTally[i] = CountOf(FilteredArray(AllPlayers(), ArrayContains(ArrayElement().selectionList, AllHeroes()[i])));
     }
+}
+
+rule: "Pre-game setup"
+{
+    if (!WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0)) {
+        DisableInspectorRecording();
+    }
+    # Convert integer selection of Extras team to team constants
+    losingTeam = [null, Team.Team1, Team.Team2][losingTeam];
+}
+
+rule: "Create Waiting for Players HUD"
+{
+    CreateHudText(
+        Header: @"Waiting On Players",
+        HeaderColor: Color.Yellow,
+        Location: Location.Top,
+        Reevaluation: HudTextRev.VisibleTo,
+        Spectators: Spectators.VisibleAlways
+    );
+    waitingText = LastTextID();
 }
 
 rule: "Global setup"
