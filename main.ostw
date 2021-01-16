@@ -69,9 +69,10 @@ if (currentPhase == Phase.Waiting)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers()) > 0)
 {
-
-    # Initialize the hero pool
-    heroPool = AllHeroes();
+    Wait(3);
+    DestroyHudText(waitingText);
+    BigMessage(AllPlayers(), <"<0><1>", @"Starting", @"...">);
+    Wait(3);
     # Set the current phase
     if (numProtects > 0) {
         currentPhase = Phase.Protect;
