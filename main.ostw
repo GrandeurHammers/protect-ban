@@ -27,12 +27,15 @@ globalvar define i 127;
 playervar define selectionList;
 playervar define textToDestroy;
 
+define MaxVotesForPhase: [maxBanVotes, maxProtectVotes, losingTeamBanVotes][IndexOfArrayValue([Phase.Ban, Phase.Protect, Phase.ExtraBan], currentPhase)];
+
 enum Phase {
     Waiting,
-    Protect = 1,
-    Ban = 2,
-    Normal = 3
-} 
+    Protect,
+    Ban,
+    ExtraBan,
+    Normal
+}
 
 void TallyVotes() "[SUB] Count up number of votes for each hero"
 {
