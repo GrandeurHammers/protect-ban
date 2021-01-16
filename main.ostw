@@ -41,7 +41,12 @@ void TallyVotes() "[SUB] Count up number of votes for each hero"
 {
     resultsTally = [];
     for (i = 0; CountOf(AllHeroes()); 1) {
-        resultsTally[i] = CountOf(FilteredArray(AllPlayers(), ArrayContains(ArrayElement().selectionList, AllHeroes()[i])));
+        resultsTally[i] = 0;
+    }
+    foreach (define p in AllPlayers()){
+        for (i = 0; CountOf(AllHeroes()); 1) {
+            resultsTally[i] += CountOf(FilteredArray(p.selectionList, ArrayElement() == AllHeroes()[i]));
+        }
     }
 }
 
