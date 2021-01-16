@@ -167,28 +167,25 @@ Event.OngoingPlayer
 
 rule: "Handle conditional player enable/disables"
 Event.OngoingPlayer
-if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
 {
     ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
-    SetGravity(EventPlayer(), 0);
     SetInvisible(InvisibleTo: InvisibleTo.All);
-    DisableMovementCollisionWithEnvironment();
+    DisableMovementCollisionWithEnvironment(IncludeFloors: false);
     DisableMovementCollisionWithPlayers();
     DisableMessages();
     EventPlayer().isInMenu = true;
     DisableGameModeHud();
     DisableGameModeInworldUI();
 
-    WaitUntil(currentPhase != Phase.Protect && currentPhase != Phase.Ban, 1000000);
-    Wait(1);
+    WaitUntil(currentPhase == Phase.Normal && IsAssemblingHeroes(), 1000000);
+    EventPlayer().isInMenu = false;
+    Wait(0.25);
     
     StopForcingThrottle(EventPlayer());
-    SetGravity(EventPlayer(), 100);
     SetInvisible(InvisibleTo: InvisibleTo.None);
     EnableMovementCollisionWithEnvironment();
     EnableMovementCollisionWithPlayers();
     EnableMessages();
-    EventPlayer().isInMenu = false;
     EnableGameModeHud();
     EnableGameModeInworldUI();
 
@@ -205,8 +202,6 @@ if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
-    # Be sure everyone has the menu open for Protect phase
-    AllPlayers().isInMenu = true;
     BigMessage(AllPlayers(), <@"Started Protect Phase">);
     # Begin timing
     selectTimeRemaining = timePerPhase;
@@ -283,8 +278,6 @@ if (isPhaseActive == false)
 # Wait for everyone to spawn in
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
-    # Be sure everyone has the menu open for Protect phase
-    AllPlayers().isInMenu = true;
     BigMessage(AllPlayers(), <@"Started Ban Phase">);
     # Begin timing
     selectTimeRemaining = timePerPhase;
@@ -438,15 +431,17 @@ if (currentPhase == Phase.Normal)
     DisableAnnouncer();
     # Disable messages during reset to Assemble Heroes
     DisableMessages(AllPlayers());
+    Wait(0.25);
     // Skip to game in progress momentarily to allow Assemble Heroes to work
     while (!IsGameInProgress()) {
         SetMatchTime(0);
         MinWait();
     }
-    Wait(0.25);
-    EnableAnnouncer();
-    EnableMessages(AllPlayers());
     GoToAssembleHeroes();
+    Wait(0.016);
+    EnableAnnouncer();
+    Wait(3);
+    EnableMessages(AllPlayers());
     WaitUntil(IsGameInProgress(), 9999);
     for (i = 0; CountOf(textsToDestroy); 1) {
         DestroyHudText(textsToDestroy[i]);
