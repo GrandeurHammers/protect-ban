@@ -8,7 +8,6 @@ import "main.ostw";
 
 globalvar define menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
 globalvar define menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
-globalvar define menuTitle = "Protect Phase - 10";
 globalvar define[] playersInMenu = [];
 define AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
 
@@ -16,6 +15,7 @@ define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPo
     ArrayContains(protectedHeroes, AllHeroesOrdered[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : IconString(Icon.RingThin);
 globalvar ClickArea[] menuButtons = [];
 globalvar define[] menuTexts = [];
+globalvar define backdropEffect;
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
@@ -23,10 +23,11 @@ rule: "[PlayerInterface.del] Initialize menu"
         VisibleTo:          playersInMenu,
         Type:               Effect.Orb,
         Color:              Color.Black,
-        Position:           menuPos + -0.33 * menuFacing,
+        Position:           menuPos + -0.32 * menuFacing,
         Radius:             1,
         Reevaluation:       EffectRev.VisibleTo
     );
+    backdropEffect = LastCreatedEntity();
     CreateInWorldText(
         VisibleTo:          playersInMenu,
         Header:             selectTimeRemaining > 0 ?
@@ -92,6 +93,7 @@ rule: "[PlayerInterface.del] Initialize menu"
 void destroyMenu()
 {
     foreach(define text in menuTexts) DestroyInWorldText(text);
+    DestroyEffect(backdropEffect);
 }
 
 playervar define isInMenu;
@@ -110,6 +112,7 @@ define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
 rule: "[PlayerInterface.del] Update hovered button"
 Event.OngoingPlayer
 if(isInMenu)
+if(WorkshopSettingToggle("Menu Options", "Show Selection on Hover", true, 1))
 {
     define foundButton = false;
     for(i = 0; i < CountOf(menuButtons); i++) {
@@ -121,6 +124,12 @@ if(isInMenu)
     }
     if(!foundButton) hoveredButton = null;
     MinWait();
+    /*Unknown bug: sometimes the rule may get stuck even after the menu is closed.
+    This solution force aborts the rule when the game enters the normal phase of gameplay.*/
+    if (currentPhase == Phase.Normal && IsAssemblingHeroes()) {
+        isInMenu = false;
+        Abort();
+    }
     LoopIfConditionIsTrue();
 }
 
@@ -153,6 +162,7 @@ rule: "[PlayerInterface.del] Menu open/close"
 Event.OngoingPlayer
 if(isInMenu)
 {
+    SetFacing(EventPlayer(), Forward());
     StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
     DisableHeroHud(EventPlayer());
@@ -170,7 +180,7 @@ if(isInMenu)
     StopCamera(EventPlayer());
 }
 
-rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
+disabled rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsInSpawnRoom())
@@ -182,7 +192,7 @@ if(CurrentGameMode() != GameMode.Control)
 void makeCursor()
 {
     CreateInWorldText(
-        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
+        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             "▲",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
         Scale:              3,
@@ -192,7 +202,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
+        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             EventPlayer(),
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
         Scale:              1.25,
@@ -270,6 +280,15 @@ void makeCursor()
                             )
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          selectTimeRemaining > 0 ? EventPlayer() : null,
+        Header:             <@"<0>: Select / <1>: Discard", InputBindingString(Button.PrimaryFire), InputBindingString(Button.SecondaryFire)>,
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.35),
+        Scale:              1.25,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndString
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
 }
 
 void destroyCursor()
@@ -285,33 +304,76 @@ if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax
     SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
 }
 
-rule: "[PlayerInterface.del] Click logic"
+rule: "[PlayerInterface.del] Primary Fire logic"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsButtonHeld(EventPlayer(), Button.PrimaryFire))
 # If in a valid phase
-if (selectTimeRemaining > 0 && (currentPhase == Phase.Ban || currentPhase == Phase.Protect))
+if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
+# If in the extra bans phase, ensure player is on losing team
+if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
+# If selection time remains
+if (selectTimeRemaining > 0)
 {
-    if(hoveredButton != null) {
-        define clickedID = hoveredButton.clickID;
-        if(ArrayContains(AllHeroes(), clickedID)) {
-            if(ArrayContains(heroPool, clickedID)) {
-                if(ArrayContains(selectionList, clickedID)) {
-                    ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
-                    PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
-                }
-                else {
-                    ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
-                    PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
-                }
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    # If no button clicked, abort
+    if (!clickedID) {
+        return;
+    }
+    # Handle press on a hero
+    if(ArrayContains(AllHeroes(), clickedID)) {
+        # Allow interaction if hero is still in pool
+        if(ArrayContains(heroPool, clickedID)) {
+            # De-select if not allowing repeat hero votes and hero is selected
+            if(!allowRepeatHeroVotes && ArrayContains(selectionList, clickedID)) {
+                ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
+                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+            } else
+            # Prevent selection if too many selected heroes
+            if (CountOf(selectionList) >= MaxVotesForPhase) {
+                SmallMessage(EventPlayer(), <@"Max Selected Heroes">);
+                PlayEffect(EventPlayer(), PlayEffect.DebuffImpactSound, Color.White, menuPos, 50);
             }
             else {
-                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+                // Select
+                ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
+                PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
             }
         }
-        else if(clickedID == "clear") {
-            selectionList = [];
-            PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
+        else {
+            PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
         }
+    } else
+    # Otherwise, handle clear button
+    if(clickedID == "clear") {
+        selectionList = [];
+        PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
+    }
+}
+
+rule: "[PlayerInterface.del] Secondary Fire logic: Deselect if possible"
+Event.OngoingPlayer
+if(isInMenu)
+if(IsButtonHeld(EventPlayer(), Button.SecondaryFire))
+# If in a valid phase
+if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
+# If in the extra bans phase, ensure player is on losing team
+if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
+# If selection time remains
+if (selectTimeRemaining > 0)
+{
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    if (!clickedID) {
+        return;
+    }
+    # Only allow right-clicking heroes
+    AbortIf(!ArrayContains(AllHeroes(), clickedID));
+    # If not a valid hero to de-select
+    if (!ArrayContains(selectionList, clickedID)) {
+        PlayEffect(EventPlayer(), PlayEffect.DebuffImpactSound, Color.White, menuPos, 50);
+    }
+    else {
+        ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, clickedID));
+        PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
     }
 }
