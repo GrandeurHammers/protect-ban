@@ -162,6 +162,7 @@ rule: "[PlayerInterface.del] Menu open/close"
 Event.OngoingPlayer
 if(isInMenu)
 {
+    SetFacing(EventPlayer(), Forward());
     StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
     DisableHeroHud(EventPlayer());
@@ -179,7 +180,7 @@ if(isInMenu)
     StopCamera(EventPlayer());
 }
 
-rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
+disabled rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsInSpawnRoom())
@@ -191,7 +192,7 @@ if(CurrentGameMode() != GameMode.Control)
 void makeCursor()
 {
     CreateInWorldText(
-        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
+        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             "▲",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
         Scale:              3,
@@ -201,7 +202,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          globalCursors ? playersInMenu : EventPlayer(),
+        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             EventPlayer(),
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
         Scale:              1.25,
@@ -277,6 +278,15 @@ void makeCursor()
                                         Color.Green :
                                     Color.White
                             )
+    );
+    ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:          selectTimeRemaining > 0 ? EventPlayer() : null,
+        Header:             <@"<0>: Select / <1>: Discard", InputBindingString(Button.PrimaryFire), InputBindingString(Button.SecondaryFire)>,
+        Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.35),
+        Scale:              1.25,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleToAndString
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
 }
