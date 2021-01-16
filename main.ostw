@@ -455,14 +455,4 @@ if (currentPhase == Phase.Normal)
     destroyMenu();
 }
 
-disabled rule: "DEBUG: Add current hero to selectionList"
-Event.OngoingPlayer
-if (IsButtonHeld(EventPlayer(), Button.Interact))
-if (currentPhase == Phase.Protect || currentPhase == Phase.Ban)
-{
-    ModifyVariable(EventPlayer().selectionList, Operation.AppendToArray, HeroOf(EventPlayer()));
-    MinWait();
-    SmallMessage(EventPlayer(), <"Selected Hero: <0>", HeroIconString(LastOf(EventPlayer().selectionList))>);
-}
-
 import "PlayerInterface.del";
