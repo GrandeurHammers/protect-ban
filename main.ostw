@@ -86,6 +86,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
         currentPhase = Phase.Protect;
     } else if (numBans > 0) {
         currentPhase = Phase.Ban;
+    } else if (losingTeam != null) {
+        currentPhase = Phase.ExtraBan;
     } else {
         currentPhase = Phase.Normal;
     }
@@ -141,12 +143,13 @@ Event.OngoingPlayer
     # If a hero pool has been decided, restrict the player to that pool
     if (currentPhase == Phase.Normal) {
         SetAllowedHeroes(EventPlayer(), heroPool);
+        return;
     }
     textToDestroy = [];
-    for (i = 0; Max(numProtects, numBans) / 4; 1) {
+    for (i = 0; Max(maxProtectVotes, Max(maxBanVotes, losingTeam != null ? losingTeamBanVotes : 0)) / 4; 1) {
         CreateHudText(
             VisibleTo:      CountOf(selectionList) > 4*EvaluateOnce(i) ? EventPlayer() : null,
-            Header:         <"<0><1><2><3>", 
+            Header:         <"<0><1><2><3>",
                                 HeroIconString(selectionList[4*EvaluateOnce(i)+0]),
                                 HeroIconString(selectionList[4*EvaluateOnce(i)+1]),
                                 HeroIconString(selectionList[4*EvaluateOnce(i)+2]),
@@ -268,7 +271,7 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numProte
     #phase no longer running
     isPhaseActive = false;
     #Move on to next phase
-    currentPhase = numBans > 0 ? Phase.Ban : Phase.Normal;
+    currentPhase = numBans > 0 ? Phase.Ban : losingTeam != null ? Phase.ExtraBan : Phase.Normal;
 }
 
 disabled rule: "====BAN PHASE====" {}
@@ -338,15 +341,79 @@ if (IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == numBans)
         CreateHudText(
             VisibleTo: AllPlayers(),
             Header: <"<0><1><2><3>",
-                EvaluateOnce(HeroIconString(bannedHeroes[4*i])),
-                EvaluateOnce(HeroIconString(bannedHeroes[4*i+1])),
-                EvaluateOnce(HeroIconString(bannedHeroes[4*i+2])),
-                EvaluateOnce(HeroIconString(bannedHeroes[4*i+3]))
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+0)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+1)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+2)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+3)])
             >,
             Location: Location.Left,
             SortOrder: numProtects+i+2,
             HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleTo
+            Reevaluation: HudTextRev.VisibleToAndString
+        );
+        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
+    }
+    Wait(5);
+    #phase no longer running
+    isPhaseActive = false;
+    #Move on to next phase
+    currentPhase = losingTeam != null ? Phase.ExtraBan : Phase.Normal;
+}
+
+disabled rule: "====EXTRA BAN PHASE====" {}
+
+rule: "Start of extra bans phase setup"
+if (currentPhase == Phase.ExtraBan)
+if (isPhaseActive == false)
+# Wait for everyone to spawn in
+if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
+{
+    BigMessage(AllPlayers(), <@"Started Bonus Ban Phase">);
+    # Begin timing
+    selectTimeRemaining = timePerPhase;
+    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
+    # Set phase active flag
+    isPhaseActive = true;
+}
+
+rule: "End of extra bans phase"
+if (currentPhase == Phase.ExtraBan)
+if (isPhaseActive)
+if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayElement().selectionList) == losingTeamBanVotes))
+    || selectTimeRemaining == 0)
+{
+    BigMessage(AllPlayers(), <@"Bonus Ban Phase Finished">);
+    #Tally votes for bonus bans
+    TallyVotes();
+    selectedHeroes = [];
+    while (CountOf(selectedHeroes) < losingTeamBans) {
+        # Get largest number of votes
+        i = LastOf(SortedArray(resultsTally));
+        # Add as many heroes as permissible which have that number of votes
+        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, losingTeamBans - CountOf(selectedHeroes)));
+        # Invalidate current largest number of votes
+        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
+    }
+    #Remove banned heroes from the hero pool
+    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
+    #Add banned heroes to the existing bans
+    ModifyVariable(bannedHeroes, Operation.AppendToArray, selectedHeroes);
+    for (i = CountOf(bannedHeroes) - CountOf(selectedHeroes); CountOf(bannedHeroes); 1) {
+        if (i % 4 != 0) {
+            continue;
+        }
+        CreateHudText(
+            VisibleTo: AllPlayers(),
+            Header: <"<0><1><2><3>",
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+0)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+1)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+2)]),
+                HeroIconString(bannedHeroes[EvaluateOnce(4*i+3)])
+            >,
+            Location: Location.Left,
+            SortOrder: numProtects+i+2,
+            HeaderColor: Color.White,
+            Reevaluation: HudTextRev.VisibleToAndString
         );
         ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
