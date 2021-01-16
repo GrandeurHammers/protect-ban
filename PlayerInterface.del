@@ -304,33 +304,76 @@ if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax
     SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
 }
 
-rule: "[PlayerInterface.del] Click logic"
+rule: "[PlayerInterface.del] Primary Fire logic"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsButtonHeld(EventPlayer(), Button.PrimaryFire))
 # If in a valid phase
-if (selectTimeRemaining > 0 && (currentPhase == Phase.Ban || currentPhase == Phase.Protect))
+if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
+# If in the extra bans phase, ensure player is on losing team
+if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
+# If selection time remains
+if (selectTimeRemaining > 0)
 {
-    if(hoveredButton != null) {
-        define clickedID = hoveredButton.clickID;
-        if(ArrayContains(AllHeroes(), clickedID)) {
-            if(ArrayContains(heroPool, clickedID)) {
-                if(ArrayContains(selectionList, clickedID)) {
-                    ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
-                    PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
-                }
-                else {
-                    ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
-                    PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
-                }
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    # If no button clicked, abort
+    if (!clickedID) {
+        return;
+    }
+    # Handle press on a hero
+    if(ArrayContains(AllHeroes(), clickedID)) {
+        # Allow interaction if hero is still in pool
+        if(ArrayContains(heroPool, clickedID)) {
+            # De-select if not allowing repeat hero votes and hero is selected
+            if(!allowRepeatHeroVotes && ArrayContains(selectionList, clickedID)) {
+                ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
+                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+            } else
+            # Prevent selection if too many selected heroes
+            if (CountOf(selectionList) >= MaxVotesForPhase) {
+                SmallMessage(EventPlayer(), <@"Max Selected Heroes">);
+                PlayEffect(EventPlayer(), PlayEffect.DebuffImpactSound, Color.White, menuPos, 50);
             }
             else {
-                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
+                // Select
+                ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
+                PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
             }
         }
-        else if(clickedID == "clear") {
-            selectionList = [];
-            PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
+        else {
+            PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
         }
+    } else
+    # Otherwise, handle clear button
+    if(clickedID == "clear") {
+        selectionList = [];
+        PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
+    }
+}
+
+rule: "[PlayerInterface.del] Secondary Fire logic: Deselect if possible"
+Event.OngoingPlayer
+if(isInMenu)
+if(IsButtonHeld(EventPlayer(), Button.SecondaryFire))
+# If in a valid phase
+if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
+# If in the extra bans phase, ensure player is on losing team
+if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
+# If selection time remains
+if (selectTimeRemaining > 0)
+{
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    if (!clickedID) {
+        return;
+    }
+    # Only allow right-clicking heroes
+    AbortIf(!ArrayContains(AllHeroes(), clickedID));
+    # If not a valid hero to de-select
+    if (!ArrayContains(selectionList, clickedID)) {
+        PlayEffect(EventPlayer(), PlayEffect.DebuffImpactSound, Color.White, menuPos, 50);
+    }
+    else {
+        ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, clickedID));
+        PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
     }
 }
