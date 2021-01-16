@@ -15,6 +15,7 @@ define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPo
     ArrayContains(protectedHeroes, AllHeroesOrdered[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : IconString(Icon.RingThin);
 globalvar ClickArea[] menuButtons = [];
 globalvar define[] menuTexts = [];
+globalvar define backdropEffect;
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
@@ -22,10 +23,11 @@ rule: "[PlayerInterface.del] Initialize menu"
         VisibleTo:          playersInMenu,
         Type:               Effect.Orb,
         Color:              Color.Black,
-        Position:           menuPos + -0.33 * menuFacing,
+        Position:           menuPos + -0.32 * menuFacing,
         Radius:             1,
         Reevaluation:       EffectRev.VisibleTo
     );
+    backdropEffect = LastCreatedEntity();
     CreateInWorldText(
         VisibleTo:          playersInMenu,
         Header:             selectTimeRemaining > 0 ?
@@ -91,6 +93,7 @@ rule: "[PlayerInterface.del] Initialize menu"
 void destroyMenu()
 {
     foreach(define text in menuTexts) DestroyInWorldText(text);
+    DestroyEffect(backdropEffect);
 }
 
 playervar define isInMenu;
