@@ -15,9 +15,9 @@ globalvar define allowRepeatHeroVotes = WorkshopSettingToggle("Protect/Ban", "Al
 globalvar Phase currentPhase;
 globalvar define isPhaseActive;
 globalvar define selectTimeRemaining;
-globalvar define heroPool;
-globalvar define protectedHeroes;
-globalvar define bannedHeroes;
+globalvar define heroPool = AllHeroes();
+globalvar define protectedHeroes = [];
+globalvar define bannedHeroes = [];
 globalvar define resultsTally;
 globalvar define selectedHeroes;
 globalvar define textsToDestroy;
