@@ -112,16 +112,6 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
         Reevaluation: ProgressBarEvaluation.VisibleToValuesAndColor
     );
     textsToDestroy = [LastTextID()];
-    CreateHudText(
-        VisibleTo: selectTimeRemaining > 0 ? AllPlayers() : null,
-        Header: <@"Selected Heroes">,
-        Location: Location.Right,
-        SortOrder: -100,
-        HeaderColor: Color.Aqua,
-        Reevaluation: HudTextRev.VisibleTo,
-        Spectators: Spectators.VisibleNever
-    );
-    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
 }
 
 rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
@@ -162,6 +152,17 @@ Event.OngoingPlayer
         );
         ModifyVariable(textToDestroy, Operation.AppendToArray, LastTextID());
     }
+    CreateHudText(
+        VisibleTo: selectTimeRemaining > 0 ? AllPlayers() : null,
+        Header: <"<0> <1>:<2>", @"Selected", @"Heroes",
+                    selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? <" <0>/<1>", CountOf(selectionList), MaxVotesForPhase> : "">,
+        Location: Location.Right,
+        SortOrder: -100,
+        HeaderColor: Color.Aqua,
+        Reevaluation: HudTextRev.VisibleToAndString,
+        Spectators: Spectators.VisibleNever
+    );
+    ModifyVariable(textToDestroy, Operation.AppendToArray, LastTextID());
 }
 
 rule: "Handle conditional player enable/disables"
