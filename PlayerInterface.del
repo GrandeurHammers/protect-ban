@@ -124,6 +124,12 @@ if(WorkshopSettingToggle("Menu Options", "Show Selection on Hover", true, 1))
     }
     if(!foundButton) hoveredButton = null;
     MinWait();
+    /*Unknown bug: sometimes the rule may get stuck even after the menu is closed.
+    This solution force aborts the rule when the game enters the normal phase of gameplay.*/
+    if (currentPhase == Phase.Normal && IsAssemblingHeroes()) {
+        isInMenu = false;
+        Abort();
+    }
     LoopIfConditionIsTrue();
 }
 
