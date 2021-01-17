@@ -92,6 +92,7 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
         currentPhase = Phase.Normal;
     }
     AbortIf(currentPhase == Phase.Normal);
+    async RefreshCursorVis();
     # Prevent normal game stuff from interfering
     DisableAnnouncer();
     DisableMessages(AllPlayers());
@@ -112,6 +113,12 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
         Reevaluation: ProgressBarEvaluation.VisibleToValuesAndColor
     );
     textsToDestroy = [LastTextID()];
+}
+
+rule: "Refresh cursor to appear above clear selection"
+if (selectTimeRemaining > 0)
+{
+    RefreshCursorVis();
 }
 
 rule: "For protect and ban phases, skip Assembling Heroes and freeze time"

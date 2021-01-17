@@ -16,6 +16,7 @@ define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPo
 globalvar ClickArea[] menuButtons = [];
 globalvar define[] menuTexts = [];
 globalvar define backdropEffect;
+globalvar define resetVisibilityFlag;
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
@@ -88,6 +89,14 @@ rule: "[PlayerInterface.del] Initialize menu"
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
     ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(0, -1.2, 0.9, 0.15, "clear"));
+}
+
+void RefreshCursorVis() "[SUB] Refresh z-order of objects"
+{
+    Wait(0.1);
+    resetVisibilityFlag = true;
+    MinWait();
+    resetVisibilityFlag = false;
 }
 
 void destroyMenu()
@@ -194,17 +203,17 @@ if(CurrentGameMode() != GameMode.Control)
 void makeCursor()
 {
     CreateInWorldText(
-        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
-        Header:             "▲",
+        VisibleTo:          resetVisibilityFlag ? null : HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
+        Header:             currentPhase == Phase.ExtraBan && TeamOf() != losingTeam ? "x" : "▲",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
-        Reevaluation:       InworldTextRev.VisibleToAndPosition,
+        Reevaluation:       InworldTextRev.VisibleToPositionStringAndColor,
         TextColor:          TeamOf() == Team.Team1 ? Color.Team1 : Color.Team2
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
+        VisibleTo:          resetVisibilityFlag ? null : HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             EventPlayer(),
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
         Scale:              1.25,
