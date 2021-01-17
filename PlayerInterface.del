@@ -32,18 +32,18 @@ rule: "[PlayerInterface.del] Initialize menu"
     CreateInWorldText(
         VisibleTo:          playersInMenu,
         Header:             selectTimeRemaining > 0 ?
-            <@"<0> Phase", currentPhase == Phase.Protect ? @"Protect" : @"Ban"> : 
-            "",
+                                <@"<0> Phase", [@"Protect", @"Ban", @"Bonus Ban"][IndexOfArrayValue([Phase.Protect, Phase.Ban, Phase.ExtraBan], currentPhase)]> :
+                                "",
         Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.5),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
-        TextColor:          Color.White
+        TextColor:          [Color.Green, Color.Red, Color.Red][IndexOfArrayValue([Phase.Protect, Phase.Ban, Phase.ExtraBan], currentPhase)]
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
     for (i = 0; i < CountOf(AllHeroesOrdered) / 8; i++) {
         CreateInWorldText(
-            VisibleTo:          playersInMenu,
+            VisibleTo:          currentPhase > Phase.Waiting ? playersInMenu : null,
             Header:             <"<0>  <1>  <2>  <3>", 
                                     getNthHeroIcon(8*EvaluateOnce(i)+0), 
                                     getNthHeroIcon(8*EvaluateOnce(i)+1), 
@@ -58,7 +58,7 @@ rule: "[PlayerInterface.del] Initialize menu"
         );
         ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
         CreateInWorldText(
-            VisibleTo:          playersInMenu,
+            VisibleTo:          currentPhase > Phase.Waiting ? playersInMenu : null,
             Header:             <"<0>  <1>  <2>  <3>", 
                                     getNthHeroIcon(8*EvaluateOnce(i)+4), 
                                     getNthHeroIcon(8*EvaluateOnce(i)+5), 
@@ -77,9 +77,8 @@ rule: "[PlayerInterface.del] Initialize menu"
     for (i = 0; i < CountOf(AllHeroesOrdered); i++) {
         ModifyVariable(menuButtons, Operation.AppendToArray, new ClickArea(-1.4 + 0.4*(i%8), 0.85 - 0.5*Quotient(i, 8), 0.33, 0.33, AllHeroesOrdered[i]));
     }
-
     CreateInWorldText(
-        VisibleTo:          playersInMenu,
+        VisibleTo:          selectTimeRemaining > 0 ? AllPlayers() : null,
         Header:             "Clear selection",
         Position:           ScreenToWorld(menuPos, menuFacing, 0, -1.2),
         Scale:              2,
@@ -191,13 +190,13 @@ if(isInMenu)
     StopCamera(EventPlayer());
 }
 
-disabled rule: "[PlayerInterface.del] Teleport out of spawn while in menu (except Control)"
+rule: "[PlayerInterface.del] Teleport out of spawn while in menu"
 Event.OngoingPlayer
 if(isInMenu)
 if(IsInSpawnRoom())
-if(CurrentGameMode() != GameMode.Control)
+if(HasSpawned())
 {
-    Teleport(EventPlayer(), Vector(0, 250, 0));
+    Teleport(EventPlayer(), menuPos - menuFacing);
 }
 
 void makeCursor()
@@ -224,7 +223,7 @@ void makeCursor()
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
 
     CreateInWorldText(
-        VisibleTo:          EventPlayer(),
+        VisibleTo:          selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? EventPlayer() : null,
         Header:             "┌",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX - hoveredButton.sizeX/2, hoveredButton.centerY + hoveredButton.sizeY/2)),
         Scale:              2.5,
@@ -241,7 +240,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          EventPlayer(),
+        VisibleTo:          selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? EventPlayer() : null,
         Header:             "┐",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX + hoveredButton.sizeX/2, hoveredButton.centerY + hoveredButton.sizeY/2)),
         Scale:              2.5,
@@ -258,7 +257,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          EventPlayer(),
+        VisibleTo:          selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? EventPlayer() : null,
         Header:             "└",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX - hoveredButton.sizeX/2, hoveredButton.centerY - hoveredButton.sizeY/2)),
         Scale:              2.5,
@@ -275,7 +274,7 @@ void makeCursor()
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        VisibleTo:          EventPlayer(),
+        VisibleTo:          selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? EventPlayer() : null,
         Header:             "┘",
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, hoveredButton.centerX + hoveredButton.sizeX/2, hoveredButton.centerY - hoveredButton.sizeY/2)),
         Scale:              2.5,
@@ -310,8 +309,10 @@ void destroyCursor()
 rule: "[PlayerInterface.del] Menu outer bounds"
 Event.OngoingPlayer
 if(isInMenu)
+if(HasSpawned())
 if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax || cursorYRaw/2 < menuYMin )
 {
+    Wait(0.032, WaitBehavior.AbortWhenFalse);
     SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
 }
 

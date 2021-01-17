@@ -61,10 +61,12 @@ rule: "Pre-game setup"
 
 rule: "Create Waiting for Players HUD"
 {
-    CreateHudText(
+    CreateInWorldText(
         Header: @"Waiting On Players",
-        HeaderColor: Color.Yellow,
-        Location: Location.Top,
+        TextColor: Color.Yellow,
+        Position: ScreenToWorld(menuPos, menuFacing, 0, 0),
+        Scale: 4,
+        Clipping: Clipping.DoNotClip,
         Reevaluation: HudTextRev.VisibleTo,
         Spectators: Spectators.VisibleAlways
     );
@@ -78,7 +80,7 @@ if (currentPhase == Phase.Waiting)
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers()) > 0)
 {
     Wait(3);
-    DestroyHudText(waitingText);
+    DestroyInWorldText(waitingText);
     BigMessage(AllPlayers(), <"<0><1>", @"Starting", @"...">);
     Wait(3);
     # Set the current phase
@@ -125,8 +127,13 @@ rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
 if (IsAssemblingHeroes())
 if (currentPhase != Phase.Normal)
 {
-    SetMatchTime(0);
-    WaitUntil(Not(IsAssemblingHeroes()), 1000000);
+    DisableAnnouncer();
+    DisableMessages(AllPlayers());
+    MinWait();
+    while (Not(IsGameInProgress())) {
+        SetMatchTime(0);
+        MinWait();
+    }
     PauseMatchTime();
     WaitUntil(currentPhase == Phase.Normal, 1000000);
     UnpauseMatchTime();
@@ -160,7 +167,7 @@ Event.OngoingPlayer
         ModifyVariable(textToDestroy, Operation.AppendToArray, LastTextID());
     }
     CreateHudText(
-        VisibleTo: selectTimeRemaining > 0 ? AllPlayers() : null,
+        VisibleTo: selectTimeRemaining > 0 ? EventPlayer() : null,
         Header: <"<0> <1>:<2>", @"Selected", @"Heroes",
                     selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? <" <0>/<1>", CountOf(selectionList), MaxVotesForPhase> : "">,
         Location: Location.Right,
@@ -174,15 +181,19 @@ Event.OngoingPlayer
 
 rule: "Handle conditional player enable/disables"
 Event.OngoingPlayer
+if (currentPhase != Phase.Normal)
+if (HasSpawned())
 {
     ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
     SetInvisible(InvisibleTo: InvisibleTo.All);
+    SetGravity(EventPlayer(), 0);
     DisableMovementCollisionWithEnvironment(IncludeFloors: false);
     DisableMovementCollisionWithPlayers();
     DisableMessages();
     EventPlayer().isInMenu = true;
     DisableGameModeHud();
     DisableGameModeInworldUI();
+    DisallowButtons(allButtons);
 
     WaitUntil(currentPhase == Phase.Normal && IsAssemblingHeroes(), 1000000);
     EventPlayer().isInMenu = false;
@@ -190,11 +201,13 @@ Event.OngoingPlayer
     
     StopForcingThrottle(EventPlayer());
     SetInvisible(InvisibleTo: InvisibleTo.None);
+    SetGravity(EventPlayer(), 100);
     EnableMovementCollisionWithEnvironment();
     EnableMovementCollisionWithPlayers();
     EnableMessages();
     EnableGameModeHud();
     EnableGameModeInworldUI();
+    AllowButtons(allButtons);
 
     for (define j = 0; CountOf(textToDestroy); 1) {
         DestroyHudText(textToDestroy[j]);
@@ -210,6 +223,7 @@ if (isPhaseActive == false)
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Protect Phase">);
+    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -224,6 +238,7 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
     || selectTimeRemaining == 0)
 {
     BigMessage(AllPlayers(), <@"Protect Phase Finished">);
+    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
     #Tally votes for heroes to protect
     TallyVotes();
     selectedHeroes = [];
@@ -287,6 +302,7 @@ if (isPhaseActive == false)
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Ban Phase">);
+    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -300,6 +316,7 @@ if (isPhaseActive)
 if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == maxBanVotes)) || selectTimeRemaining == 0)
 {
     BigMessage(AllPlayers(), <@"Finished Ban Phase">);
+    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
     #Tally votes for heroes to protect
     TallyVotes();
     selectedHeroes = [];
@@ -371,6 +388,7 @@ if (isPhaseActive == false)
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Bonus Ban Phase">);
+    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -385,6 +403,7 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayEle
     || selectTimeRemaining == 0)
 {
     BigMessage(AllPlayers(), <@"Bonus Ban Phase Finished">);
+    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
     #Tally votes for bonus bans
     TallyVotes();
     selectedHeroes = [];
@@ -435,7 +454,6 @@ if (currentPhase == Phase.Normal)
     ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
     # Only allow the heroes in the pool
     SetAllowedHeroes(AllPlayers(), heroPool);
-    async CleanupTexts();
     # Disable in-game announcer during reset to Assemble Heroes
     DisableAnnouncer();
     # Disable messages during reset to Assemble Heroes
@@ -447,9 +465,12 @@ if (currentPhase == Phase.Normal)
         MinWait();
     }
     GoToAssembleHeroes();
-    Wait(0.016);
+    Wait(0.1);
     EnableAnnouncer();
     Wait(3);
+     # Clean up the menu
+    destroyMenu();
+    async CleanupTexts();
     EnableMessages(AllPlayers());
 }
 
@@ -459,8 +480,6 @@ void CleanupTexts() "[SUB] Clean up protect/ban texts" {
         DestroyHudText(textsToDestroy[i]);
     }
     textsToDestroy = [];
-    # Clean up the menu
-    destroyMenu();
 }
 
 import "PlayerInterface.del";
