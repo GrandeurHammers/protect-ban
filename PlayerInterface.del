@@ -20,7 +20,7 @@ globalvar define backdropEffect;
 rule: "[PlayerInterface.del] Initialize menu"
 {
     CreateEffect(
-        VisibleTo:          playersInMenu,
+        VisibleTo:          AllPlayers(),
         Type:               Effect.Orb,
         Color:              Color.Black,
         Position:           menuPos + -0.32 * menuFacing,
