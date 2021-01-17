@@ -162,8 +162,10 @@ rule: "[PlayerInterface.del] Menu open/close"
 Event.OngoingPlayer
 if(isInMenu)
 {
-    SetFacing(EventPlayer(), Forward());
     StartCamera(EyePosition: menuPos, LookAtPosition: menuPos + menuFacing);
+    StartFacing(EventPlayer(), Forward(), 1000, Relative.ToWorld);
+    WaitUntil(AngleBetweenVectors(FacingDirectionOf(), Forward()) < 0.1, 3);
+    StopFacing(EventPlayer());
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
     DisableHeroHud(EventPlayer());
     menuOriginalFacing = FacingDirectionOf();
