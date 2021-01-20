@@ -4,7 +4,7 @@ import "ClickArea.del";
 
 import "MapData.del";
 
-//import "ServerLoad.del";
+import "ServerLoad.del";
 
 import "main.ostw";
 
