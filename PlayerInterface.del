@@ -1,8 +1,10 @@
 import "ScreenToWorld.del";
-import "ServerLoad.del";
+import "Math.del";
 import "ClickArea.del";
 
 import "MapData.del";
+
+import "ServerLoad.del";
 
 import "main.ostw";
 
@@ -108,15 +110,17 @@ playervar define isInMenu;
 playervar define menuOriginalFacing;
 playervar define[] cursorTexts;
 playervar ClickArea hoveredButton;
-define cursorSens: 1.5;
-define cursorXRaw: cursorSens/5 * AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
-define cursorYRaw: cursorSens/5 * AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
-define menuXMin: -2.5;
-define menuXMax: 2.5;
-define menuYMin: -1.5;
-define menuYMax: 1.25;
-define cursorX: Max(menuXMin, Min(menuXMax, cursorXRaw));
-define cursorY: Max(menuYMin, Min(menuYMax, cursorYRaw));
+define frameMinX: -2.5; define frameMaxX: 2.5;
+define frameMinY: -1.5; define frameMaxY: 1.25;
+define cursorTrueX: AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
+define cursorTrueY: AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
+playervar define cursorOffsetX = 0;
+playervar define cursorOffsetY = 0;
+define cursorRawX: cursorTrueX + cursorOffsetX;
+define cursorRawY: cursorTrueY + cursorOffsetY;
+define cursorX: Clamp(cursorRawX, frameMinX, frameMaxX);
+define cursorY: Clamp(cursorRawY, frameMinY, frameMaxY);
+
 rule: "[PlayerInterface.del] Update hovered button"
 Event.OngoingPlayer
 if(isInMenu)
@@ -178,7 +182,7 @@ if(isInMenu)
     DisableHeroHud(EventPlayer());
     menuOriginalFacing = FacingDirectionOf();
     DisallowButtons(allButtons);
-    SetAimSpeed(EventPlayer(), 50);
+    SetAimSpeed(EventPlayer(), 20);
     makeCursor();
 
     WaitUntil(!isInMenu, 9999);
@@ -306,14 +310,14 @@ void destroyCursor()
     foreach(define text in cursorTexts) DestroyInWorldText(text);
 }
 
-rule: "[PlayerInterface.del] Menu outer bounds"
+rule: "[PlayerInterface.del] Menu bounds"
 Event.OngoingPlayer
 if(isInMenu)
 if(HasSpawned())
-if(cursorXRaw/2 > menuXMax || cursorXRaw/2 < menuXMin || cursorYRaw/2 > menuYMax || cursorYRaw/2 < menuYMin )
+if(!IsInRangeIncl(cursorRawX, frameMinX, frameMaxX) || !IsInRangeIncl(cursorRawY, frameMinY, frameMaxY))
 {
-    Wait(0.032, WaitBehavior.AbortWhenFalse);
-    SetFacing(EventPlayer(), DirectionFromAngles(HorizontalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorX, VerticalAngleFromDirection(menuOriginalFacing) - 5/cursorSens*cursorY));
+    cursorOffsetX -= cursorRawX - cursorX;
+    cursorOffsetY -= cursorRawY - cursorY;
 }
 
 rule: "[PlayerInterface.del] Primary Fire logic"
