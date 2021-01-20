@@ -1,8 +1,10 @@
 import "ScreenToWorld.del";
-import "ServerLoad.del";
+import "Math.del";
 import "ClickArea.del";
 
 import "MapData.del";
+
+//import "ServerLoad.del";
 
 import "main.ostw";
 
