@@ -39,7 +39,7 @@ rule: "[PlayerInterface.del] Initialize menu"
         Position:           ScreenToWorld(menuPos, menuFacing, 0, 1.5),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
-        Reevaluation:       InworldTextRev.VisibleToAndString,
+        Reevaluation:       InworldTextRev.VisibleToStringAndColor,
         TextColor:          [Color.Green, Color.Red, Color.Red][IndexOfArrayValue([Phase.Protect, Phase.Ban, Phase.ExtraBan], currentPhase)]
     );
     ModifyVariable(menuTexts, Operation.AppendToArray, LastTextID());
@@ -211,7 +211,7 @@ void makeCursor()
         Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX(), cursorY())),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
-        Reevaluation:       InworldTextRev.VisibleToPositionStringAndColor,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndString,
         TextColor:          TeamOf() == Team.Team1 ? Color.Team1 : Color.Team2
     );
     ModifyVariable(cursorTexts, Operation.AppendToArray, LastTextID());
