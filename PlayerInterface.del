@@ -112,37 +112,37 @@ playervar define[] cursorTexts;
 playervar ClickArea hoveredButton;
 define frameMinX: -2.5; define frameMaxX: 2.5;
 define frameMinY: -1.5; define frameMaxY: 1.25;
-define cursorTrueX: AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf()), HorizontalAngleFromDirection(menuOriginalFacing));
-define cursorTrueY: AngleDifference(VerticalAngleFromDirection(FacingDirectionOf()), VerticalAngleFromDirection(menuOriginalFacing));
+define cursorTrueX(define player=EventPlayer()): AngleDifference(HorizontalAngleFromDirection(FacingDirectionOf(player)), HorizontalAngleFromDirection(player.menuOriginalFacing));
+define cursorTrueY(define player=EventPlayer()): AngleDifference(VerticalAngleFromDirection(FacingDirectionOf(player)), VerticalAngleFromDirection(player.menuOriginalFacing));
 playervar define cursorOffsetX = 0;
 playervar define cursorOffsetY = 0;
-define cursorRawX: cursorTrueX + cursorOffsetX;
-define cursorRawY: cursorTrueY + cursorOffsetY;
-define cursorX: Clamp(cursorRawX, frameMinX, frameMaxX);
-define cursorY: Clamp(cursorRawY, frameMinY, frameMaxY);
+define cursorRawX(define player=EventPlayer()): cursorTrueX(player) + player.cursorOffsetX;
+define cursorRawY(define player=EventPlayer()): cursorTrueY(player) + player.cursorOffsetY;
+define cursorX(define player=EventPlayer()): Clamp(cursorRawX(player), frameMinX, frameMaxX);
+define cursorY(define player=EventPlayer()): Clamp(cursorRawY(player), frameMinY, frameMaxY);
 
 rule: "[PlayerInterface.del] Update hovered button"
-Event.OngoingPlayer
-if(isInMenu)
 if(WorkshopSettingToggle("Menu Options", "Show Selection on Hover", true, 1))
+if(currentPhase == Phase.Protect)
 {
-    define foundButton = false;
-    for(i = 0; i < CountOf(menuButtons); i++) {
-        if (menuButtons[i].isHovered(cursorX, cursorY)) {
-            hoveredButton = menuButtons[i];
-            foundButton = true;
-            break;
+    foreach(define p in AllPlayers()) {
+        define foundButton = false;
+        for(i = 0; i < CountOf(menuButtons); i++) {
+            if (menuButtons[i].isHovered(cursorX(p), cursorY(p))) {
+                p.hoveredButton = menuButtons[i];
+                foundButton = true;
+                break;
+            }
         }
+        if(!foundButton) p.hoveredButton = null;
+        Wait(3 * 0.016);
     }
-    if(!foundButton) hoveredButton = null;
-    MinWait();
-    /*Unknown bug: sometimes the rule may get stuck even after the menu is closed.
-    This solution force aborts the rule when the game enters the normal phase of gameplay.*/
+
     if (currentPhase == Phase.Normal && IsAssemblingHeroes()) {
-        isInMenu = false;
+        AllPlayers().isInMenu = false;
         Abort();
     }
-    LoopIfConditionIsTrue();
+    else Loop();
 }
 
 
@@ -208,7 +208,7 @@ void makeCursor()
     CreateInWorldText(
         VisibleTo:          resetVisibilityFlag ? null : HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             currentPhase == Phase.ExtraBan && TeamOf() != losingTeam ? "x" : "▲",
-        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY)),
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX(), cursorY())),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToPositionStringAndColor,
@@ -218,7 +218,7 @@ void makeCursor()
     CreateInWorldText(
         VisibleTo:          resetVisibilityFlag ? null : HasSpawned() ? globalCursors ? playersInMenu : EventPlayer() : null,
         Header:             EventPlayer(),
-        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX, cursorY-0.1)),
+        Position:           UpdateEveryFrame(ScreenToWorld(menuPos, menuFacing, cursorX(), cursorY()-0.1)),
         Scale:              1.25,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndPosition,
@@ -314,10 +314,10 @@ rule: "[PlayerInterface.del] Menu bounds"
 Event.OngoingPlayer
 if(isInMenu)
 if(HasSpawned())
-if(!IsInRangeIncl(cursorRawX, frameMinX, frameMaxX) || !IsInRangeIncl(cursorRawY, frameMinY, frameMaxY))
+if(!IsInRangeIncl(cursorRawX(), frameMinX, frameMaxX) || !IsInRangeIncl(cursorRawY(), frameMinY, frameMaxY))
 {
-    cursorOffsetX -= cursorRawX - cursorX;
-    cursorOffsetY -= cursorRawY - cursorY;
+    cursorOffsetX -= cursorRawX() - cursorX();
+    cursorOffsetY -= cursorRawY() - cursorY();
 }
 
 rule: "[PlayerInterface.del] Primary Fire logic"
@@ -331,7 +331,7 @@ if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
 # If selection time remains
 if (selectTimeRemaining > 0)
 {
-    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX(), cursorY()))[0]).clickID;
     # If no button clicked, abort
     if (!clickedID) {
         return;
@@ -378,7 +378,7 @@ if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
 # If selection time remains
 if (selectTimeRemaining > 0)
 {
-    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX, cursorY))[0]).clickID;
+    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX(), cursorY()))[0]).clickID;
     if (!clickedID) {
         return;
     }
