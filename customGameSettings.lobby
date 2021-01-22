@@ -1,4 +1,7 @@
 {
+  "Lobby": {
+    "Max Spectators": 12
+  },
   "Modes": {
     "All": {
       "Game Mode Start": "Immediately",

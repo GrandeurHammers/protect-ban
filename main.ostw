@@ -93,7 +93,7 @@ if (selectTimeRemaining > 0)
                                                     currentPhase == Phase.Ban ? @"Ban" :
                                                     currentPhase == Phase.ExtraBan ? @"Bonus Ban" : "">,
         HeaderColor: Color.Yellow,
-        Location: Location.Top,
+        Location: Location.Right,
         SortOrder: 1,
         Reevaluation: HudTextRev.String,
         Spectators: Spectators.VisibleAlways
@@ -103,7 +103,7 @@ if (selectTimeRemaining > 0)
         CreateHudText(
             VisibleTo: null,
             Header: <"<0> | <1> Votes", HeroIconString(SortedArray(AllHeroes(), -1*resultsTally[CurrentArrayIndex()])[EvaluateOnce(i)]), SortedArray(resultsTally, -1*ArrayElement())[EvaluateOnce(i)]>,
-            Location: Location.Top,
+            Location: Location.Right,
             HeaderColor: Color.White,
             SortOrder: EvaluateOnce(i) + 2,
             Reevaluation: HudTextRev.String,

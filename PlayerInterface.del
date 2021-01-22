@@ -182,6 +182,7 @@ if(isInMenu)
     StartFacing(EventPlayer(), Forward(), 1000, Relative.ToWorld);
     WaitUntil(AngleBetweenVectors(FacingDirectionOf(), Forward()) < 0.1, 3);
     StopFacing(EventPlayer());
+    cursorOffsetX = 0; cursorOffsetY = 0;
     ModifyVariable(playersInMenu, Operation.AppendToArray, EventPlayer());
     DisableHeroHud(EventPlayer());
     menuOriginalFacing = FacingDirectionOf();
@@ -416,4 +417,45 @@ void SelectHero(define hero) {
 void DeselectHero(define hero) {
     ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), hero)], Operation.Subtract, 1);
     ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, hero));
+}
+
+playervar define mightBeStuckPrompt;
+
+rule: "Detect player stuck"
+Event.OngoingPlayer
+if (isInMenu)
+# If on boundary...
+if (cursorX() >= frameMaxX || cursorX() <= frameMinX || cursorY() >= frameMaxY || cursorY() <= frameMinY)
+{
+    #...for over 3 seconds...
+    Wait(3, WaitBehavior.AbortWhenFalse);
+    #Prompt the player to press Interact to get unstuck
+    CreateInWorldText(
+        VisibleTo:      EventPlayer(),
+        Header:         <"Stuck? Hold [<0>] To Reset To Center", InputBindingString(Button.Interact)>,
+        Position:       ScreenToWorld(menuPos, menuFacing, 0, -1),
+        Scale:          2,
+        Clipping:       Clipping.DoNotClip,
+        Reevaluation:   InworldTextRev.String,
+        TextColor:      Color.Aqua,
+        Spectators:     Spectators.VisibleNever
+    );
+    mightBeStuckPrompt = LastTextID();
+    # Wait until we know the player is not stuck
+    WaitUntil(IsInRangeExcl(cursorRawX(), frameMinX, frameMaxX) && IsInRangeExcl(cursorRawY(), frameMinY, frameMaxY), 1000000);
+    DestroyInWorldText(mightBeStuckPrompt);
+}
+
+rule: "If a player holds Interact in the menu, reset them to a known good state"
+Event.OngoingPlayer
+if (isInMenu)
+if (IsButtonHeld(EventPlayer(), Button.Interact))
+{
+    Wait(1);
+    # Set the player to face forwards, and make that their original facing too
+    menuOriginalFacing = Forward();
+    cursorOffsetX = 0; cursorOffsetY = 0;
+    SetFacing(EventPlayer(), Forward(), Relative.ToWorld);
+    MinWait();
+    cursorOffsetX = 0; cursorOffsetY = 0;
 }
