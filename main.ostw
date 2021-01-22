@@ -68,6 +68,18 @@ rule: "Create Waiting for Players HUD"
         Spectators: Spectators.VisibleNever
     );
     ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
+    # Spectator version
+    CreateHudText(
+        VisibleTo: null,
+        Header: <@"Waiting On Players: <0> / <1> Spawned", NumberOfLivingPlayers(), NumberOfPlayers()>,
+        TextColor: Color.Yellow,
+        Location: Location.Top,
+        SortOrder: 1,
+        HeaderColor: Color.Yellow,
+        Reevaluation: HudTextRev.String,
+        Spectators: Spectators.VisibleAlways
+    );
+    ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
 }
 
 globalvar define[] specTexts;
@@ -111,6 +123,7 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
 {
     Wait(3);
     foreach(define text in waitingText) DestroyInWorldText(text);
+    foreach(define text in specTexts) DestroyHudText(text);
     BigMessage(AllPlayers(), <"<0><1>", @"Starting", @"...">);
     Wait(3);
     # Set the current phase
