@@ -21,7 +21,7 @@ globalvar define bannedHeroes = [];
 globalvar define resultsTally;
 globalvar define selectedHeroes;
 globalvar define textsToDestroy;
-globalvar define waitingText;
+globalvar define[] waitingText;
 globalvar define i 127;
 
 playervar define selectionList;
@@ -35,19 +35,6 @@ enum Phase {
     Ban,
     ExtraBan,
     Normal
-}
-
-void TallyVotes() "[SUB] Count up number of votes for each hero"
-{
-    resultsTally = [];
-    for (i = 0; CountOf(AllHeroes()); 1) {
-        resultsTally[i] = 0;
-    }
-    foreach (define p in AllPlayers()){
-        for (i = 0; CountOf(AllHeroes()); 1) {
-            resultsTally[i] += CountOf(FilteredArray(p.selectionList, ArrayElement() == AllHeroes()[i]));
-        }
-    }
 }
 
 rule: "Pre-game setup"
@@ -68,9 +55,64 @@ rule: "Create Waiting for Players HUD"
         Scale: 4,
         Clipping: Clipping.DoNotClip,
         Reevaluation: HudTextRev.VisibleTo,
+        Spectators: Spectators.VisibleNever
+    );
+    ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        Header: <@"<0> / <1> Players Selected Hero", NumberOfLivingPlayers(), NumberOfPlayers()>,
+        TextColor: Color.White,
+        Position: ScreenToWorld(menuPos, menuFacing, 0, -0.25),
+        Scale: 2,
+        Clipping: Clipping.DoNotClip,
+        Reevaluation: HudTextRev.VisibleToAndString,
+        Spectators: Spectators.VisibleNever
+    );
+    ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
+    # Spectator version
+    CreateHudText(
+        VisibleTo: null,
+        Header: <@"Waiting On Players: <0> / <1> Spawned", NumberOfLivingPlayers(), NumberOfPlayers()>,
+        TextColor: Color.Yellow,
+        Location: Location.Top,
+        SortOrder: 1,
+        HeaderColor: Color.Yellow,
+        Reevaluation: HudTextRev.String,
         Spectators: Spectators.VisibleAlways
     );
-    waitingText = LastTextID();
+    ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
+}
+
+globalvar define[] specTexts;
+
+rule: "Create spectator HUD"
+if (selectTimeRemaining > 0)
+{
+    CreateHudText(
+        VisibleTo: null,
+        Header: <"<0> Phase Voting Leaderboard", currentPhase == Phase.Protect ? @"Protect" :
+                                                    currentPhase == Phase.Ban ? @"Ban" :
+                                                    currentPhase == Phase.ExtraBan ? @"Bonus Ban" : "">,
+        HeaderColor: Color.Yellow,
+        Location: Location.Top,
+        SortOrder: 1,
+        Reevaluation: HudTextRev.String,
+        Spectators: Spectators.VisibleAlways
+    );
+    ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
+    for (i = 0; 5; 1) {
+        CreateHudText(
+            VisibleTo: null,
+            Header: <"<0> | <1> Votes", HeroIconString(SortedArray(AllHeroes(), -1*resultsTally[CurrentArrayIndex()])[EvaluateOnce(i)]), SortedArray(resultsTally, -1*ArrayElement())[EvaluateOnce(i)]>,
+            Location: Location.Top,
+            HeaderColor: Color.White,
+            SortOrder: EvaluateOnce(i) + 2,
+            Reevaluation: HudTextRev.String,
+            Spectators: Spectators.VisibleAlways
+        );
+        ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
+    }
+    WaitUntil(selectTimeRemaining == 0, selectTimeRemaining + 10);
+    foreach(define t in specTexts) DestroyHudText(t);
 }
 
 rule: "Global setup"
@@ -80,7 +122,8 @@ if (currentPhase == Phase.Waiting)
 if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers()) > 0)
 {
     Wait(3);
-    DestroyInWorldText(waitingText);
+    foreach(define text in waitingText) DestroyInWorldText(text);
+    foreach(define text in specTexts) DestroyHudText(text);
     BigMessage(AllPlayers(), <"<0><1>", @"Starting", @"...">);
     Wait(3);
     # Set the current phase
@@ -104,7 +147,7 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers
         Value: selectTimeRemaining / timePerPhase * 100,
         Text: <@"Time Remaining: <0> sec", RoundToInteger(selectTimeRemaining, Rounding.Up)>,
         Location: Location.Top,
-        SortOrder: 5,
+        SortOrder: 15,
         ProgressBarColor: CustomColor(
             Red:   255,
             Green: Min(255, 255*(selectTimeRemaining*2/timePerPhase)^2),
@@ -224,6 +267,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Protect Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -239,8 +284,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
 {
     BigMessage(AllPlayers(), <@"Protect Phase Finished">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for heroes to protect
-    TallyVotes();
     selectedHeroes = [];
     //Select the numProtects most voted heroes
     while (CountOf(selectedHeroes) < numProtects) {
@@ -303,6 +346,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -317,8 +362,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
 {
     BigMessage(AllPlayers(), <@"Finished Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for heroes to protect
-    TallyVotes();
     selectedHeroes = [];
     //Select the numBans most voted heroes
     while (CountOf(selectedHeroes) < numBans) {
@@ -389,6 +432,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Bonus Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -404,8 +449,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayEle
 {
     BigMessage(AllPlayers(), <@"Bonus Ban Phase Finished">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for bonus bans
-    TallyVotes();
     selectedHeroes = [];
     while (CountOf(selectedHeroes) < losingTeamBans) {
         # Get largest number of votes
