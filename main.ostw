@@ -481,6 +481,9 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayEle
         );
         ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
+    #Reset the timer
+    StopChasingVariable(selectTimeRemaining);
+    selectTimeRemaining = 0;
     Wait(5);
     #phase no longer running
     isPhaseActive = false;
