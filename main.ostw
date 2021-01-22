@@ -310,7 +310,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
         Location: Location.Left,
         SortOrder: 0,
         HeaderColor: Color.Yellow,
-        Reevaluation: HudTextRev.VisibleTo
+        Reevaluation: HudTextRev.VisibleTo,
+        Spectators: Spectators.VisibleAlways
     );
     ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     for (i = 0; CountOf(protectedHeroes) / 4; 1) {
@@ -325,7 +326,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
             Location: Location.Left,
             SortOrder: i+1,
             HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleTo
+            Reevaluation: HudTextRev.VisibleTo,
+            Spectators: Spectators.VisibleAlways
         );
         ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
@@ -387,7 +389,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
         Text: " \n",
         Location: Location.Left,
         SortOrder: numProtects+0.5,
-        Reevaluation: HudTextRev.VisibleTo
+        Reevaluation: HudTextRev.VisibleTo,
+        Spectators: Spectators.VisibleAlways
     );
     ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     CreateHudText(
@@ -396,7 +399,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
         Location: Location.Left,
         SortOrder: numProtects+1,
         HeaderColor: Color.Red,
-        Reevaluation: HudTextRev.VisibleTo
+        Reevaluation: HudTextRev.VisibleTo,
+        Spectators: Spectators.VisibleAlways
     );
     ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     for (i = 0; CountOf(bannedHeroes) / 4; 1) {
@@ -411,7 +415,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
             Location: Location.Left,
             SortOrder: numProtects+i+2,
             HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleToAndString
+            Reevaluation: HudTextRev.VisibleToAndString,
+            Spectators: Spectators.VisibleAlways
         );
         ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
@@ -477,7 +482,8 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayEle
             Location: Location.Left,
             SortOrder: numProtects+i+2,
             HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleToAndString
+            Reevaluation: HudTextRev.VisibleToAndString,
+            Spectators: Spectators.VisibleAlways
         );
         ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
     }
