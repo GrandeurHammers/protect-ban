@@ -353,7 +353,7 @@ if (selectTimeRemaining > 0)
         if(ArrayContains(heroPool, clickedID)) {
             # De-select if not allowing repeat hero votes and hero is selected
             if(!allowRepeatHeroVotes && ArrayContains(selectionList, clickedID)) {
-                ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, clickedID);
+                DeselectHero(clickedID);
                 PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
             } else
             # Prevent selection if too many selected heroes
@@ -363,7 +363,7 @@ if (selectTimeRemaining > 0)
             }
             else {
                 // Select
-                ModifyVariable(selectionList, Operation.AppendToArray, clickedID);
+                SelectHero(clickedID);
                 PlayEffect(EventPlayer(), PlayEffect.BuffExplosionSound, Color.White, menuPos, 50);
             }
         }
@@ -373,6 +373,9 @@ if (selectTimeRemaining > 0)
     } else
     # Otherwise, handle clear button
     if(clickedID == "clear") {
+        foreach (define h in selectionList) {
+            ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), h)], Operation.Subtract, 1);
+        }
         selectionList = [];
         PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
     }
@@ -403,4 +406,14 @@ if (selectTimeRemaining > 0)
         ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, clickedID));
         PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
     }
+}
+
+void SelectHero(define hero) {
+    ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), hero)], Operation.Add, 1);
+    ModifyVariable(selectionList, Operation.AppendToArray, hero);
+}
+
+void DeselectHero(define hero) {
+    ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), hero)], Operation.Subtract, 1);
+    ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, hero));
 }
