@@ -59,7 +59,7 @@ rule: "Create Waiting for Players HUD"
     );
     ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
-        Header: <@"<0> / <1> Players Selected Hero", NumberOfLivingPlayers(), NumberOfPlayers()>,
+        Header: <@"<0> / <1> Players Selected Hero", CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))), NumberOfPlayers()>,
         TextColor: Color.White,
         Position: ScreenToWorld(menuPos, menuFacing, 0, -0.25),
         Scale: 2,
@@ -71,7 +71,7 @@ rule: "Create Waiting for Players HUD"
     # Spectator version
     CreateHudText(
         VisibleTo: null,
-        Header: <@"Waiting On Players: <0> / <1> Spawned", NumberOfLivingPlayers(), NumberOfPlayers()>,
+        Header: <@"Waiting On Players: <0> / <1> Spawned", CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))), NumberOfPlayers()>,
         TextColor: Color.Yellow,
         Location: Location.Top,
         SortOrder: 1,
