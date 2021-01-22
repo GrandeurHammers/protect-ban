@@ -37,19 +37,6 @@ enum Phase {
     Normal
 }
 
-void TallyVotes() "[SUB] Count up number of votes for each hero"
-{
-    resultsTally = [];
-    for (i = 0; CountOf(AllHeroes()); 1) {
-        resultsTally[i] = 0;
-    }
-    foreach (define p in AllPlayers()){
-        for (i = 0; CountOf(AllHeroes()); 1) {
-            resultsTally[i] += CountOf(FilteredArray(p.selectionList, ArrayElement() == AllHeroes()[i]));
-        }
-    }
-}
-
 rule: "Pre-game setup"
 {
     if (!WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0)) {
@@ -224,6 +211,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Protect Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -239,8 +228,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
 {
     BigMessage(AllPlayers(), <@"Protect Phase Finished">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for heroes to protect
-    TallyVotes();
     selectedHeroes = [];
     //Select the numProtects most voted heroes
     while (CountOf(selectedHeroes) < numProtects) {
@@ -303,6 +290,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -317,8 +306,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().sel
 {
     BigMessage(AllPlayers(), <@"Finished Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for heroes to protect
-    TallyVotes();
     selectedHeroes = [];
     //Select the numBans most voted heroes
     while (CountOf(selectedHeroes) < numBans) {
@@ -389,6 +376,8 @@ if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
 {
     BigMessage(AllPlayers(), <@"Started Bonus Ban Phase">);
     PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
+    # Clear results tally
+    resultsTally = [];
     # Begin timing
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -404,8 +393,6 @@ if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayEle
 {
     BigMessage(AllPlayers(), <@"Bonus Ban Phase Finished">);
     PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    #Tally votes for bonus bans
-    TallyVotes();
     selectedHeroes = [];
     while (CountOf(selectedHeroes) < losingTeamBans) {
         # Get largest number of votes
