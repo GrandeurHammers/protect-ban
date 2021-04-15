@@ -1,0 +1,40 @@
+import "main.ostw";
+
+rule: "[DEBUG] Show some HUDs and stuff" 
+{
+    CreateHudText(
+        VisibleTo: AllPlayers(),
+        Header: <"Phase <0>", PhaseName>,
+        Location: Location.Left,
+        Reevaluation: HudTextRev.VisibleToAndString
+    );
+    CreateHudText(
+        VisibleTo: LocalPlayer() != null ? LocalPlayer() : null,
+        Header: <"Selected Heroes: <0> <1>", LocalPlayer().selectionList[0], LocalPlayer().selectionList[1]>,
+        SortOrder: 2
+    );
+    CreateProgressBarHudText(
+        VisibleTo:      selectTimeRemaining > 0 ? AllPlayers() : null,
+        Value:          selectTimeRemaining / timePerPhase * 100,
+        Text:           <"<0> Selecting", currVotingTeam>,
+        Location:       Location.Left,
+        SortOrder:      1,
+        Reevaluation:   ProgressBarEvaluation.VisibleToAndValues
+    );
+}
+
+rule: "[DEBUG] Create temporary hero pool"
+{
+    heroPool = AllHeroes();
+}
+
+rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
+Event.OngoingPlayer
+if (IsButtonHeld(Button: Button.Interact))
+{
+    if (ArrayContains(selectionList, HeroOf())) {
+        ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, HeroOf());
+        return;
+    }
+    ModifyVariable(selectionList, Operation.AppendToArray, HeroOf());
+}

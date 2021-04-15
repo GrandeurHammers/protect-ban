@@ -1,506 +1,328 @@
 import "customGameSettings.lobby";
+import "Credits.ostw";
 
-globalvar define numProtects = WorkshopSettingInteger("Protect/Ban", "Hero Protects", 1, 0, 15, 2);
-globalvar define numBans = WorkshopSettingInteger("Protect/Ban", "Hero Bans", 1, 0, 15, 0);
-globalvar define timePerPhase = WorkshopSettingInteger("Protect/Ban", "Time Limit Per Phase", 20, 5, 120, 9.9);
-globalvar define maxProtectVotes = WorkshopSettingInteger("Protect/Ban", "Protect Votes Per Player", 2, 1, 15, 3);
-globalvar define maxBanVotes = WorkshopSettingInteger("Protect/Ban", "Ban Votes Per Player", 2, 1, 15, 1);
-globalvar define globalCursors = WorkshopSettingToggle("Menu Options", "See All Cursors", true, 0);
-globalvar define losingTeam = WorkshopSettingCombo("Protect/Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
-globalvar define losingTeamBans = WorkshopSettingInteger("Protect/Ban", "Extra Bans", 1, 1, 15, 11);
-globalvar define losingTeamBanVotes = WorkshopSettingInteger("Protect/Ban", "Extra Ban Votes Per Player", 2, 1, 15, 12);
-globalvar define progressOnMaxVotes = WorkshopSettingToggle("Protect/Ban", "Skip Timer When All Players Have Max Selections", true, 100);
-globalvar define allowRepeatHeroVotes = WorkshopSettingToggle("Protect/Ban", "Allow Repeat Votes For Same Hero", false, 20);
+globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects", 1, 0, 15, 2);
+globalvar Number numBans = WorkshopSettingInteger("Ban", "Hero Bans", 1, 0, 15, 0);
+globalvar Number maxProtectVotes = WorkshopSettingInteger("Protect", "Protect Votes Per Player", 2, 1, 15, 3);
+globalvar Number maxBanVotes = WorkshopSettingInteger("Ban", "Ban Votes Per Player", 2, 1, 15, 1);
+globalvar Team | Number losingTeam = WorkshopSettingCombo("Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
+globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1, 1, 15, 11);
+globalvar Number losingTeamBanVotes = WorkshopSettingInteger("Ban", "Extra Ban Votes Per Player", 2, 1, 15, 12);
+globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Phase", 20, 5, 120, 9.9);
+globalvar Number progressOnMaxVotes = WorkshopSettingToggle("General", "Skip Timer When All Players Have Max Selections", true, 100);
+globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
 // END CUSTOMIZATION
+globalvar Hero[] protectedHeroes;
+globalvar Hero[] bannedHeroes;
+globalvar Hero[] heroPool;
+globalvar Hero | Hero[] selectedHero;
 globalvar Phase currentPhase;
-globalvar define isPhaseActive;
-globalvar define selectTimeRemaining;
-globalvar define heroPool = AllHeroes();
-globalvar define protectedHeroes = [];
-globalvar define bannedHeroes = [];
-globalvar define resultsTally;
-globalvar define selectedHeroes;
-globalvar define textsToDestroy;
-globalvar define[] waitingText;
-globalvar define i 127;
+globalvar Boolean isPhaseActive;
+globalvar Boolean endPhaseFlag;
+globalvar Number selectTimeRemaining;
+globalvar Team currVotingTeam;
+globalvar Number[] stagesRemainingInPhase = [0, 0]; // [0] = Team 1, [1] = Team 2
+globalvar Number stageStreakRemaining;
+globalvar Number[] phaseHudText = []; // HUD texts to clean up at next phase transition
+globalvar Number[] phaseIWText = []; // In-world texts to clean up at next phase transition
+globalvar Number[] globalHudText = []; // HUD Text to clean up when mode is complete
+globalvar Number i 127;
 
-playervar define selectionList;
-playervar define textToDestroy;
+playervar Hero[] selectionList = [];
+playervar Number[] personalEffects = [];
 
-define MaxVotesForPhase: [maxBanVotes, maxProtectVotes, losingTeamBanVotes][IndexOfArrayValue([Phase.Ban, Phase.Protect, Phase.ExtraBan], currentPhase)];
+// FIXME: Remove when re-adding interface
+Vector menuPos: Vector(0,100,0);
+Vector menuFacing: Forward();
+
+Number MaxSelectionsForPhase: [numProtects, numBans, losingTeamBans][<Number>currentPhase - 1];
+Number MaxVotesForPhase: [maxBanVotes, maxProtectVotes, losingTeamBanVotes][IndexOfArrayValue([Phase.Ban, Phase.Protect, Phase.ExtraBan], currentPhase)];
+Number TeamIndex(Team team): IndexOfArrayValue([Team.Team1, Team.Team2], team);
+Number STREAK_LENGTH: 2;
+String PhaseName: ["Waiting", "Protect", "Ban", "Extra Ban", "Gameplay"][currentPhase];
 
 enum Phase {
     Waiting,
     Protect,
     Ban,
     ExtraBan,
-    Normal
+    Gameplay
 }
 
-rule: "Pre-game setup"
+void DisableAllHud() {
+    DisableGameModeHud();
+    DisableGameModeInworldUI();
+    DisableHeroHud();
+    DisableScoreboard();
+}
+
+void EnableAllHud() {
+    EnableGameModeHud();
+    EnableGameModeInworldUI();
+    EnableHeroHud();
+    EnableScoreboard();
+}
+
+rule: "[GLOBAL SETUP] Global setup"
 {
     if (!WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0)) {
         DisableInspectorRecording();
     }
     # Convert integer selection of Extras team to team constants
     losingTeam = [null, Team.Team1, Team.Team2][losingTeam];
+    # Set initial objective description
+    SetObjectiveDescription(AllPlayers(), "Waiting for Players", HudTextRev.VisibleTo);
 }
 
-rule: "Create Waiting for Players HUD"
-{
-    CreateInWorldText(
-        Header: @"Waiting On Players",
-        TextColor: Color.Yellow,
-        Position: ScreenToWorld(menuPos, menuFacing, 0, 0),
-        Scale: 4,
-        Clipping: Clipping.DoNotClip,
-        Reevaluation: HudTextRev.VisibleTo,
-        Spectators: Spectators.VisibleNever
-    );
-    ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
-    CreateInWorldText(
-        Header: <@"<0> / <1> Players Selected Hero", CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))), NumberOfPlayers()>,
-        TextColor: Color.White,
-        Position: ScreenToWorld(menuPos, menuFacing, 0, -0.25),
-        Scale: 2,
-        Clipping: Clipping.DoNotClip,
-        Reevaluation: HudTextRev.VisibleToAndString,
-        Spectators: Spectators.VisibleNever
-    );
-    ModifyVariable(waitingText, Operation.AppendToArray, LastTextID());
-    # Spectator version
-    CreateHudText(
-        VisibleTo: null,
-        Header: <@"Waiting On Players: <0> / <1> Spawned", CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))), NumberOfPlayers()>,
-        TextColor: Color.Yellow,
-        Location: Location.Top,
-        SortOrder: 1,
-        HeaderColor: Color.Yellow,
-        Reevaluation: HudTextRev.String,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
-}
-
-globalvar define[] specTexts;
-
-rule: "Create spectator HUD"
-if (selectTimeRemaining > 0)
-{
-    CreateHudText(
-        VisibleTo: null,
-        Header: <"<0> Phase Voting Leaderboard", currentPhase == Phase.Protect ? @"Protect" :
-                                                    currentPhase == Phase.Ban ? @"Ban" :
-                                                    currentPhase == Phase.ExtraBan ? @"Bonus Ban" : "">,
-        HeaderColor: Color.Yellow,
-        Location: Location.Right,
-        SortOrder: 1,
-        Reevaluation: HudTextRev.String,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
-    for (i = 0; 5; 1) {
-        CreateHudText(
-            VisibleTo: null,
-            Header: <"<0> | <1> Votes", HeroIconString(SortedArray(AllHeroes(), -1*resultsTally[CurrentArrayIndex()])[EvaluateOnce(i)]), SortedArray(resultsTally, -1*ArrayElement())[EvaluateOnce(i)]>,
-            Location: Location.Right,
-            HeaderColor: Color.White,
-            SortOrder: EvaluateOnce(i) + 2,
-            Reevaluation: HudTextRev.String,
-            Spectators: Spectators.VisibleAlways
-        );
-        ModifyVariable(specTexts, Operation.AppendToArray, LastTextID());
-    }
-    WaitUntil(selectTimeRemaining == 0, selectTimeRemaining + 10);
-    foreach(define t in specTexts) DestroyHudText(t);
-}
-
-rule: "Global setup"
-if (IsWaitingForPlayers() == false)
-if (currentPhase == Phase.Waiting)
-# Wait for everyone to spawn in
-if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())) && CountOf(AllPlayers()) > 0)
-{
-    Wait(3);
-    foreach(define text in waitingText) DestroyInWorldText(text);
-    foreach(define text in specTexts) DestroyHudText(text);
-    BigMessage(AllPlayers(), <"<0><1>", @"Starting", @"...">);
-    Wait(3);
-    # Set the current phase
-    if (numProtects > 0) {
-        currentPhase = Phase.Protect;
-    } else if (numBans > 0) {
-        currentPhase = Phase.Ban;
-    } else if (losingTeam != null) {
-        currentPhase = Phase.ExtraBan;
-    } else {
-        currentPhase = Phase.Normal;
-    }
-    AbortIf(currentPhase == Phase.Normal);
-    async RefreshCursorVis();
-    # Prevent normal game stuff from interfering
-    DisableAnnouncer();
-    DisableMessages(AllPlayers());
-    # Create some universal HUDs
-    CreateProgressBarHudText(
-        VisibleTo: selectTimeRemaining > 0 ? AllPlayers() : null,
-        Value: selectTimeRemaining / timePerPhase * 100,
-        Text: <@"Time Remaining: <0> sec", RoundToInteger(selectTimeRemaining, Rounding.Up)>,
-        Location: Location.Top,
-        SortOrder: 15,
-        ProgressBarColor: CustomColor(
-            Red:   255,
-            Green: Min(255, 255*(selectTimeRemaining*2/timePerPhase)^2),
-            Blue:  Min(255, 255*(selectTimeRemaining*2/timePerPhase)^2),
-            Alpha: 255
-        ),
-        TextColor: Color.White,
-        Reevaluation: ProgressBarEvaluation.VisibleToValuesAndColor
-    );
-    textsToDestroy = [LastTextID()];
-}
-
-rule: "Refresh cursor to appear above clear selection"
-if (selectTimeRemaining > 0)
-{
-    RefreshCursorVis();
-}
-
-rule: "For protect and ban phases, skip Assembling Heroes and freeze time"
-if (IsAssemblingHeroes())
-if (currentPhase != Phase.Normal)
-{
-    DisableAnnouncer();
-    DisableMessages(AllPlayers());
-    MinWait();
-    while (Not(IsGameInProgress())) {
-        SetMatchTime(0);
-        MinWait();
-    }
-    PauseMatchTime();
-    WaitUntil(currentPhase == Phase.Normal, 1000000);
-    UnpauseMatchTime();
-}
-
-rule: "Player setup"
+rule: "[PLAYER SETUP] Force player out of initial hero select on spawn and handle HUD"
 Event.OngoingPlayer
+# Shorthand for being in the ban/protect phase
+if (IsWaitingForPlayers())
 {
-    # Initialize player selection list
-    EventPlayer().selectionList = [];
+    DisableAllHud();
+    while(!HasSpawned(EventPlayer())) {
+        ForcePlayerHero(EventPlayer(), RandomValueInArray(AllHeroes()));
+        Wait(1);
+        StopForcingHero(EventPlayer());
+        Wait(0.25);
+    }
+    WaitUntil(!IsWaitingForPlayers(), 1000000);
+    EnableAllHud();
+}
+
+rule: "Player hero pool setup"
+Event.OngoingPlayer
+if (currentPhase == Phase.Gameplay)
+{
     # If a hero pool has been decided, restrict the player to that pool
-    if (currentPhase == Phase.Normal) {
-        SetAllowedHeroes(EventPlayer(), heroPool);
+    SetAllowedHeroes(EventPlayer(), heroPool);
+}
+
+void StartVotingStage() "[TIMER] Start stage timer"
+{
+    # Start a new stage
+    BigMessage(Header: <"<0> <1>", currVotingTeam, PhaseName>);
+    StopChasingVariable(selectTimeRemaining);
+    selectTimeRemaining = timePerPhase;
+    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
+}
+
+void GoNextPhase() "[STATE MACHINE] When called, transition from current phase to the next logical phase"
+{
+    # First, clean up this phase
+    CleanupCurrentPhase();
+    Wait(0.25);
+    switch(currentPhase) {
+        case Phase.Waiting:
+            if (numProtects > 0) {
+                currentPhase = Phase.Protect;
+                break;
+            }
+            // Note the intentional fallthrough to skip to the next phase
+        case Phase.Protect:
+            if (numBans > 0) {
+                currentPhase = Phase.Ban;
+                break;
+            }
+            // Note the intentional fallthrough to skip to the next phase
+        case Phase.Ban:
+            if (losingTeamBans > 0 && losingTeam != null) {
+                currentPhase = Phase.ExtraBan;
+                break;
+            }
+        default:
+            currentPhase = Phase.Gameplay;
+            return;
+    }
+    BigMessage(Header: <"Starting <0> Phase", PhaseName>);
+    ResetVotingPhase();
+    Wait(3);
+    isPhaseActive = true;
+    StartVotingStage();
+}
+
+void CleanupCurrentPhase() "[STATE MACHINE HELPER] clean up current phase"
+{
+    foreach (Number hud in phaseHudText) { DestroyHudText(hud); }
+    foreach (Number iwt in phaseIWText) { DestroyInWorldText(iwt); }
+    phaseHudText = [];
+    phaseIWText = [];
+    # Call individual phase hooks
+    Skip(0);
+    switch (currentPhase) {
+        case Phase.Waiting:
+            WaitPhaseCleanup();
+            return;
+        // TODO: Add other phase cleanup routines
+    }
+}
+
+void ResetVotingPhase() "[SUB] Reset voting stage trackers" {
+    # Reset trackers
+    stagesRemainingInPhase = [MaxSelectionsForPhase, MaxSelectionsForPhase];
+    stageStreakRemaining = 1;
+    # Set the current voting team
+    if (firstPickTeam == Team.All) {
+        currVotingTeam = RandomValueInArray([Team.Team1, Team.Team2]);
         return;
     }
-    textToDestroy = [];
-    for (i = 0; Max(maxProtectVotes, Max(maxBanVotes, losingTeam != null ? losingTeamBanVotes : 0)) / 4; 1) {
-        CreateHudText(
-            VisibleTo:      CountOf(selectionList) > 4*EvaluateOnce(i) ? EventPlayer() : null,
-            Header:         <"<0><1><2><3>",
-                                HeroIconString(selectionList[4*EvaluateOnce(i)+0]),
-                                HeroIconString(selectionList[4*EvaluateOnce(i)+1]),
-                                HeroIconString(selectionList[4*EvaluateOnce(i)+2]),
-                                HeroIconString(selectionList[4*EvaluateOnce(i)+3])
-                            >,
-            Location: Location.Right,
-            SortOrder: -99 + 4*i,
-            Reevaluation: HudTextRev.VisibleToAndString,
-            Spectators: Spectators.VisibleNever
-        );
-        ModifyVariable(textToDestroy, Operation.AppendToArray, LastTextID());
-    }
-    CreateHudText(
-        VisibleTo: selectTimeRemaining > 0 ? EventPlayer() : null,
-        Header: <"<0> <1>:<2>", @"Selected", @"Heroes",
-                    selectTimeRemaining > 0 && (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam) ? <" <0>/<1>", CountOf(selectionList), MaxVotesForPhase> : "">,
-        Location: Location.Right,
-        SortOrder: -100,
-        HeaderColor: Color.Aqua,
-        Reevaluation: HudTextRev.VisibleToAndString,
-        Spectators: Spectators.VisibleNever
-    );
-    ModifyVariable(textToDestroy, Operation.AppendToArray, LastTextID());
+    currVotingTeam = firstPickTeam;
+    AdvanceStageSelection();
 }
 
-rule: "Handle conditional player enable/disables"
-Event.OngoingPlayer
-if (currentPhase != Phase.Normal)
-if (HasSpawned())
+void AdvanceStageSelection() "[SUB] Advancing stage streak logic + ending phase logic" {
+    # Swap current voting team if current voting team streak has ended.
+    if (stageStreakRemaining == 0) {
+        currVotingTeam = OppositeTeamOf(currVotingTeam);
+        stageStreakRemaining = Min(STREAK_LENGTH, stagesRemainingInPhase[TeamIndex(currVotingTeam)]);
+    }
+    # Check if current team is out of stages. If so, we know that the phase is over, since the current team can never have fewer stages left than the other team.
+    if (stagesRemainingInPhase[TeamIndex(currVotingTeam)] == 0) {
+        endPhaseFlag = true;
+        return;
+    }
+    stageStreakRemaining -= 1;
+    stagesRemainingInPhase[TeamIndex(currVotingTeam)] -= 1;
+}
+
+void TallyVotes() "[SUB] Tally votes and select most voted hero (break ties randomly)"
 {
-    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
-    SetInvisible(InvisibleTo: InvisibleTo.All);
-    SetGravity(EventPlayer(), 0);
-    DisableMovementCollisionWithEnvironment(IncludeFloors: false);
-    DisableMovementCollisionWithPlayers();
-    DisableMessages();
-    EventPlayer().isInMenu = true;
-    DisableGameModeHud();
-    DisableGameModeInworldUI();
-    DisallowButtons(allButtons);
-
-    WaitUntil(currentPhase == Phase.Normal && IsAssemblingHeroes(), 1000000);
-    EventPlayer().isInMenu = false;
-    Wait(0.25);
-    
-    StopForcingThrottle(EventPlayer());
-    SetInvisible(InvisibleTo: InvisibleTo.None);
-    SetGravity(EventPlayer(), 100);
-    EnableMovementCollisionWithEnvironment();
-    EnableMovementCollisionWithPlayers();
-    EnableMessages();
-    EnableGameModeHud();
-    EnableGameModeInworldUI();
-    AllowButtons(allButtons);
-
-    for (define j = 0; CountOf(textToDestroy); 1) {
-        DestroyHudText(textToDestroy[j]);
+    // FIXME: Only count votes from currently voting team
+    // Where's my array reduce Sadge
+    /* Iterate through everyone's selection list and accumulate votes.*/
+    selectedHero = MappedArray(heroPool, 0);
+    for (i = 0; CountOf(AllPlayers()); 1) {
+        selectedHero = MappedArray(
+            selectedHero,
+            ArrayElement() + (ArrayContains(AllPlayers()[i].selectionList, heroPool[CurrentArrayIndex()]) ? 1 : 0)
+        );
     }
+    # Choose randomly from list of most voted heroes
+    i = LastOf(SortedArray(selectedHero));
+    selectedHero = RandomValueInArray(FilteredArray(heroPool, selectedHero[CurrentArrayIndex()] == i));
+    # Reset player selection lists
+    AllPlayers().selectionList = [];
 }
+
+rule: "[STAGE END HANDLER] When time runs out (or all players have voted), tally votes, announce result, and advance stage"
+if (isPhaseActive)
+# If time is up or every player has voted
+if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == MaxVotesForPhase)))
+{
+    StopChasingVariable(selectTimeRemaining);
+    selectTimeRemaining = 0;
+    BigMessage(Header: "Tallying Votes...");
+    TallyVotes();
+    Wait(3);
+    // TODO: Announce results
+    BigMessage(AllPlayers(), <"<0>: <1>", PhaseName, HeroIconString(selectedHero)>);
+    AdvanceStageSelection();
+    # If the phase is over after advancing to next stage, don't start a new stage.
+    AbortIf(endPhaseFlag);
+    Wait(3);
+    StartVotingStage();
+}
+
+rule: "[PHASE END HANDLER] When phase ends, announce phase end and transition phases"
+if (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay)
+if (endPhaseFlag)
+{
+    isPhaseActive = false;
+    endPhaseFlag = false;
+    # Wait to let previous Big Message finish
+    Wait(3);
+    BigMessage(Header: <"<0> Phase Finished", PhaseName>);
+    Wait(3);
+    GoNextPhase();
+}
+
+disabled rule: "====WAITING PHASE====" {}
+
+rule: "[PHASE: WAITING] Setup HUD"
+if (currentPhase == Phase.Waiting)
+{
+    // TODO: Create Waiting for Players IWT HUD for players
+    CreateHudText(
+        VisibleTo: AllPlayers(),
+        Header: <"<0>/<1> <2> <3>",
+            CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))),
+            NumberOfPlayers(),
+            @"Players",
+            @"Spawned"
+        >,
+        Location: Location.Top,
+        SortOrder: 1,
+        HeaderColor: Color.Yellow,
+        Spectators: Spectators.VisibleAlways
+    );
+    ModifyVariable(phaseHudText, Operation.AppendToArray, LastTextID());
+}
+
+rule: "[PHASE: WAITING] Start mode"
+if (IsWaitingForPlayers())
+if (currentPhase == Phase.Waiting)
+# Ensure at least one player is playing
+if (NumberOfPlayers() > 0)
+# Wait for everyone to spawn in
+if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
+{
+    BigMessage(AllPlayers(), "Starting in 15 seconds...");
+    Wait(5);
+    BigMessage(AllPlayers(), "Starting in 10 seconds...");
+    Wait(5);
+    BigMessage(AllPlayers(), "Starting in 5 seconds...");
+    Wait(5);
+    GoNextPhase();
+}
+
+void WaitPhaseCleanup() "[PHASE: WAITING] clean up"
+{
+    # TODO: Any specific waiting phase cleanup
+}
+
+// rule: "Handle conditional player enable/disables"
+// Event.OngoingPlayer
+// if (currentPhase != Phase.Normal)
+// if (HasSpawned())
+// {
+//     ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
+//     SetInvisible(InvisibleTo: InvisibleTo.All);
+//     SetGravity(EventPlayer(), 0);
+//     DisableMovementCollisionWithEnvironment(IncludeFloors: false);
+//     DisableMovementCollisionWithPlayers();
+//     DisableMessages();
+//     EventPlayer().isInMenu = true;
+//     DisableGameModeHud();
+//     DisableGameModeInworldUI();
+//     DisallowButtons(allButtons);
+
+//     WaitUntil(currentPhase == Phase.Normal && IsAssemblingHeroes(), 1000000);
+//     EventPlayer().isInMenu = false;
+//     Wait(0.25);
+
+//     StopForcingThrottle(EventPlayer());
+//     SetInvisible(InvisibleTo: InvisibleTo.None);
+//     SetGravity(EventPlayer(), 100);
+//     EnableMovementCollisionWithEnvironment();
+//     EnableMovementCollisionWithPlayers();
+//     EnableMessages();
+//     EnableGameModeHud();
+//     EnableGameModeInworldUI();
+//     AllowButtons(allButtons);
+// }
 
 disabled rule: "====PROTECT PHASE====" {}
 
-rule: "Start of protect phase setup"
-if (currentPhase == Phase.Protect)
-if (isPhaseActive == false)
-# Wait for everyone to spawn in
-if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
-{
-    BigMessage(AllPlayers(), <@"Started Protect Phase">);
-    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
-    # Clear results tally
-    resultsTally = [];
-    # Begin timing
-    selectTimeRemaining = timePerPhase;
-    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
-    # Set phase active flag
-    isPhaseActive = true;
-}
 
-rule: "End of protect phase"
-if (currentPhase == Phase.Protect)
-if (isPhaseActive)
-if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == maxProtectVotes))
-    || selectTimeRemaining == 0)
-{
-    BigMessage(AllPlayers(), <@"Protect Phase Finished">);
-    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    selectedHeroes = [];
-    //Select the numProtects most voted heroes
-    while (CountOf(selectedHeroes) < numProtects) {
-        # Get largest number of votes
-        i = LastOf(SortedArray(resultsTally));
-        # Add as many heroes as permissible which have that number of votes
-        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, numProtects - CountOf(selectedHeroes)));
-        # Invalidate current largest number of votes
-        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
-    }
-    #Remove protected heroes from the hero pool (for banning purposes)
-    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
-    #Remember which heroes got protected so we can add them back to the hero pool after banning
-    protectedHeroes = selectedHeroes;
-    #Reset the timer
-    StopChasingVariable(selectTimeRemaining);
-    selectTimeRemaining = 0;
-    #Reset player selection lists
-    AllPlayers().selectionList = [];
-    # Show which heroes have been protected
-    CreateHudText(
-        VisibleTo: AllPlayers(),
-        Header: @"Protect:",
-        Location: Location.Left,
-        SortOrder: 0,
-        HeaderColor: Color.Yellow,
-        Reevaluation: HudTextRev.VisibleTo,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    for (i = 0; CountOf(protectedHeroes) / 4; 1) {
-        CreateHudText(
-            VisibleTo: AllPlayers(),
-            Header: <"<0><1><2><3>",
-                EvaluateOnce(HeroIconString(protectedHeroes[4*i])),
-                EvaluateOnce(HeroIconString(protectedHeroes[4*i+1])),
-                EvaluateOnce(HeroIconString(protectedHeroes[4*i+2])),
-                EvaluateOnce(HeroIconString(protectedHeroes[4*i+3]))
-            >,
-            Location: Location.Left,
-            SortOrder: i+1,
-            HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleTo,
-            Spectators: Spectators.VisibleAlways
-        );
-        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    }
-    Wait(5);
-    #phase no longer running
-    isPhaseActive = false;
-    #Move on to next phase
-    currentPhase = numBans > 0 ? Phase.Ban : losingTeam != null ? Phase.ExtraBan : Phase.Normal;
-}
 
 disabled rule: "====BAN PHASE====" {}
 
-rule: "Start of ban phase setup"
-if (currentPhase == Phase.Ban)
-if (isPhaseActive == false)
-# Wait for everyone to spawn in
-if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
-{
-    BigMessage(AllPlayers(), <@"Started Ban Phase">);
-    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
-    # Clear results tally
-    resultsTally = [];
-    # Begin timing
-    selectTimeRemaining = timePerPhase;
-    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
-    # Set phase active flag
-    isPhaseActive = true;
-}
-
-rule: "End of ban phase"
-if (currentPhase == Phase.Ban)
-if (isPhaseActive)
-if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == maxBanVotes)) || selectTimeRemaining == 0)
-{
-    BigMessage(AllPlayers(), <@"Finished Ban Phase">);
-    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    selectedHeroes = [];
-    //Select the numBans most voted heroes
-    while (CountOf(selectedHeroes) < numBans) {
-        # Get largest number of votes
-        i = LastOf(SortedArray(resultsTally));
-        # Add as many heroes as permissible which have that number of votes
-        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, numBans - CountOf(selectedHeroes)));
-        # Invalidate current largest number of votes
-        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
-    }
-    #Remove banned heroes from the hero pool
-    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
-    #Remember which heroes got banned
-    bannedHeroes = selectedHeroes;
-    #Reset the timer
-    StopChasingVariable(selectTimeRemaining);
-    selectTimeRemaining = 0;
-    #Reset player selection lists
-    AllPlayers().selectionList = [];
-    # Spacer HUD
-    CreateHudText(
-        VisibleTo: AllPlayers(),
-        Text: " \n",
-        Location: Location.Left,
-        SortOrder: numProtects+0.5,
-        Reevaluation: HudTextRev.VisibleTo,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    CreateHudText(
-        VisibleTo: AllPlayers(),
-        Header: @"Ban:",
-        Location: Location.Left,
-        SortOrder: numProtects+1,
-        HeaderColor: Color.Red,
-        Reevaluation: HudTextRev.VisibleTo,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    for (i = 0; CountOf(bannedHeroes) / 4; 1) {
-        CreateHudText(
-            VisibleTo: AllPlayers(),
-            Header: <"<0><1><2><3>",
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+0)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+1)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+2)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+3)])
-            >,
-            Location: Location.Left,
-            SortOrder: numProtects+i+2,
-            HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleToAndString,
-            Spectators: Spectators.VisibleAlways
-        );
-        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    }
-    Wait(5);
-    #phase no longer running
-    isPhaseActive = false;
-    #Move on to next phase
-    currentPhase = losingTeam != null ? Phase.ExtraBan : Phase.Normal;
-}
-
 disabled rule: "====EXTRA BAN PHASE====" {}
-
-rule: "Start of extra bans phase setup"
-if (currentPhase == Phase.ExtraBan)
-if (isPhaseActive == false)
-# Wait for everyone to spawn in
-if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
-{
-    BigMessage(AllPlayers(), <@"Started Bonus Ban Phase">);
-    PlayEffect(AllPlayers(), PlayEffect.BuffImpactSound, Color.White, menuPos, 50);
-    # Clear results tally
-    resultsTally = [];
-    # Begin timing
-    selectTimeRemaining = timePerPhase;
-    ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
-    # Set phase active flag
-    isPhaseActive = true;
-}
-
-rule: "End of extra bans phase"
-if (currentPhase == Phase.ExtraBan)
-if (isPhaseActive)
-if ((progressOnMaxVotes && IsTrueForAll(AllPlayers(losingTeam), CountOf(ArrayElement().selectionList) == losingTeamBanVotes))
-    || selectTimeRemaining == 0)
-{
-    BigMessage(AllPlayers(), <@"Bonus Ban Phase Finished">);
-    PlayEffect(AllPlayers(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
-    selectedHeroes = [];
-    while (CountOf(selectedHeroes) < losingTeamBans) {
-        # Get largest number of votes
-        i = LastOf(SortedArray(resultsTally));
-        # Add as many heroes as permissible which have that number of votes
-        ModifyVariable(selectedHeroes, Operation.AppendToArray, ArraySlice(RandomizedArray(FilteredArray(AllHeroes(), resultsTally[CurrentArrayIndex()] == i)), 0, losingTeamBans - CountOf(selectedHeroes)));
-        # Invalidate current largest number of votes
-        resultsTally = MappedArray(resultsTally, (ArrayElement() == i ? -1 : 1) * ArrayElement());
-    }
-    #Remove banned heroes from the hero pool
-    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHeroes);
-    #Add banned heroes to the existing bans
-    ModifyVariable(bannedHeroes, Operation.AppendToArray, selectedHeroes);
-    for (i = CountOf(bannedHeroes) - CountOf(selectedHeroes); CountOf(bannedHeroes); 1) {
-        if (i % 4 != 0) {
-            continue;
-        }
-        CreateHudText(
-            VisibleTo: AllPlayers(),
-            Header: <"<0><1><2><3>",
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+0)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+1)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+2)]),
-                HeroIconString(bannedHeroes[EvaluateOnce(4*i+3)])
-            >,
-            Location: Location.Left,
-            SortOrder: numProtects+i+2,
-            HeaderColor: Color.White,
-            Reevaluation: HudTextRev.VisibleToAndString,
-            Spectators: Spectators.VisibleAlways
-        );
-        ModifyVariable(textsToDestroy, Operation.AppendToArray, LastTextID());
-    }
-    #Reset the timer
-    StopChasingVariable(selectTimeRemaining);
-    selectTimeRemaining = 0;
-    Wait(5);
-    #phase no longer running
-    isPhaseActive = false;
-    #Move on to next phase
-    currentPhase = Phase.Normal;
-}
 
 disabled rule: "====NORMAL GAMEPLAY====" {}
 
 rule: "Prepare to enter normal gameplay"
-if (currentPhase == Phase.Normal)
+if (currentPhase == Phase.Gameplay)
 {
     # Add protected heroes back to the hero pool
     ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
@@ -521,17 +343,11 @@ if (currentPhase == Phase.Normal)
     EnableAnnouncer();
     Wait(3);
      # Clean up the menu
-    destroyMenu();
-    async CleanupTexts();
+    // destroyMenu();
+    // async CleanupTexts();
     EnableMessages(AllPlayers());
 }
 
-void CleanupTexts() "[SUB] Clean up protect/ban texts" {
-    WaitUntil(IsGameInProgress(), 9999);
-    for (i = 0; CountOf(textsToDestroy); 1) {
-        DestroyHudText(textsToDestroy[i]);
-    }
-    textsToDestroy = [];
-}
-
-import "PlayerInterface.del";
+// import "PlayerInterface.del";
+import "ScreenToWorld.del";
+import "coreDebug.ostw";
