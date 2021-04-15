@@ -16,6 +16,7 @@ globalvar Hero[] protectedHeroes;
 globalvar Hero[] bannedHeroes;
 globalvar Hero[] heroPool;
 globalvar Hero | Hero[] selectedHero;
+globalvar Player[] votingPlayers;
 globalvar Phase currentPhase;
 globalvar Boolean isPhaseActive;
 globalvar Boolean endPhaseFlag;
@@ -187,14 +188,14 @@ void AdvanceStageSelection() "[SUB] Advancing stage streak logic + ending phase 
 
 void TallyVotes() "[SUB] Tally votes and select most voted hero (break ties randomly)"
 {
-    // FIXME: Only count votes from currently voting team
     // Where's my array reduce Sadge
     /* Iterate through everyone's selection list and accumulate votes.*/
     selectedHero = MappedArray(heroPool, 0);
-    for (i = 0; CountOf(AllPlayers()); 1) {
+    votingPlayers = AllPlayers(currVotingTeam);
+    for (i = 0; CountOf(votingPlayers); 1) {
         selectedHero = MappedArray(
             selectedHero,
-            ArrayElement() + (ArrayContains(AllPlayers()[i].selectionList, heroPool[CurrentArrayIndex()]) ? 1 : 0)
+            ArrayElement() + (ArrayContains(votingPlayers[i].selectionList, heroPool[CurrentArrayIndex()]) ? 1 : 0)
         );
     }
     # Choose randomly from list of most voted heroes
@@ -214,8 +215,8 @@ if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers()
     BigMessage(Header: "Tallying Votes...");
     TallyVotes();
     Wait(3);
-    // TODO: Announce results
     BigMessage(AllPlayers(), <"<0>: <1>", PhaseName, HeroIconString(selectedHero)>);
+    // TODO: Take action on the selected hero
     AdvanceStageSelection();
     # If the phase is over after advancing to next stage, don't start a new stage.
     AbortIf(endPhaseFlag);
