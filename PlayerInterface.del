@@ -8,17 +8,17 @@ import "ServerLoad.del";
 
 import "main.ostw";
 
-globalvar define menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
-globalvar define menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
-globalvar define[] playersInMenu = [];
-define AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
+globalvar Vector menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
+globalvar Vector menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
+globalvar Player[] playersInMenu = [];
+Hero[] AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
 
-define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroesOrdered[n]) ? HeroIconString(AllHeroesOrdered[n]) : 
+String getNthHeroIcon(Number n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroesOrdered[n]) ? HeroIconString(AllHeroesOrdered[n]) :
     ArrayContains(protectedHeroes, AllHeroesOrdered[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : IconString(Icon.RingThin);
 globalvar ClickArea[] menuButtons = [];
-globalvar define[] menuTexts = [];
-globalvar define backdropEffect;
-globalvar define resetVisibilityFlag;
+globalvar Number[] menuTexts = [];
+globalvar Number backdropEffect;
+globalvar Boolean resetVisibilityFlag;
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
