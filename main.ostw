@@ -12,9 +12,9 @@ globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Pe
 globalvar Number progressOnMaxVotes = WorkshopSettingToggle("General", "Skip Timer When All Players Have Max Selections", true, 100);
 globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
 // END CUSTOMIZATION
-globalvar Hero[] protectedHeroes;
-globalvar Hero[] bannedHeroes;
-globalvar Hero[] heroPool;
+globalvar Hero[] protectedHeroes = [];
+globalvar Hero[] bannedHeroes = [];
+globalvar Hero[] heroPool = AllHeroes();
 globalvar Hero | Hero[] selectedHero;
 globalvar Player[] votingPlayers;
 globalvar Phase currentPhase;
@@ -27,14 +27,12 @@ globalvar Number stageStreakRemaining;
 globalvar Number[] phaseHudText = []; // HUD texts to clean up at next phase transition
 globalvar Number[] phaseIWText = []; // In-world texts to clean up at next phase transition
 globalvar Number[] globalHudText = []; // HUD Text to clean up when mode is complete
+globalvar Number[] globalIWText = [];
+globalvar Number[] globalEffects = [];
 globalvar Number i 127;
 
 playervar Hero[] selectionList = [];
 playervar Number[] personalEffects = [];
-
-// FIXME: Remove when re-adding interface
-Vector menuPos: Vector(0,100,0);
-Vector menuFacing: Forward();
 
 Number MaxSelectionsForPhase: [numProtects, numBans, losingTeamBans][<Number>currentPhase - 1];
 Number MaxVotesForPhase: [maxBanVotes, maxProtectVotes, losingTeamBanVotes][IndexOfArrayValue([Phase.Ban, Phase.Protect, Phase.ExtraBan], currentPhase)];
@@ -75,20 +73,36 @@ rule: "[GLOBAL SETUP] Global setup"
     SetObjectiveDescription(AllPlayers(), "Waiting for Players", HudTextRev.VisibleTo);
 }
 
-rule: "[PLAYER SETUP] Force player out of initial hero select on spawn and handle HUD"
+rule: "[PLAYER SETUP] Force player out of initial hero select on spawn and handle conditional enable/disables"
 Event.OngoingPlayer
 # Shorthand for being in the ban/protect phase
 if (IsWaitingForPlayers())
 {
     DisableAllHud();
+    EventPlayer().isInMenu = true;
+    DisallowButtons(allButtons);
+    ForceThrottle(EventPlayer(), 0, 0, 0, 0, 0, 0);
+    SetInvisible(InvisibleTo: InvisibleTo.All);
+    SetGravity(EventPlayer(), 0);
+    DisableMovementCollisionWithEnvironment(IncludeFloors: false);
+    DisableMovementCollisionWithPlayers();
+
     while(!HasSpawned(EventPlayer())) {
         ForcePlayerHero(EventPlayer(), RandomValueInArray(AllHeroes()));
         Wait(1);
         StopForcingHero(EventPlayer());
         Wait(0.25);
     }
+
     WaitUntil(!IsWaitingForPlayers(), 1000000);
     EnableAllHud();
+    EventPlayer().isInMenu = false;
+    AllowButtons(allButtons);
+    StopForcingThrottle(EventPlayer());
+    SetInvisible(InvisibleTo: InvisibleTo.None);
+    SetGravity(EventPlayer(), 100);
+    EnableMovementCollisionWithEnvironment();
+    EnableMovementCollisionWithPlayers();
 }
 
 rule: "Player hero pool setup"
@@ -137,6 +151,7 @@ void GoNextPhase() "[STATE MACHINE] When called, transition from current phase t
     }
     BigMessage(Header: <"Starting <0> Phase", PhaseName>);
     ResetVotingPhase();
+    async RefreshCursorVis();
     Wait(3);
     isPhaseActive = true;
     StartVotingStage();
@@ -205,6 +220,20 @@ void TallyVotes() "[SUB] Tally votes and select most voted hero (break ties rand
     AllPlayers().selectionList = [];
 }
 
+void SelectedHeroAction() "[SUB] Take action for selected hero"
+{
+    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, selectedHero);
+    switch (currentPhase) {
+        case Phase.Ban:
+        case Phase.ExtraBan:
+            ModifyVariable(bannedHeroes, Operation.AppendToArray, selectedHero);
+            break;
+        case Phase.Protect:
+            ModifyVariable(protectedHeroes, Operation.AppendToArray, selectedHero);
+            break;
+    }
+}
+
 rule: "[STAGE END HANDLER] When time runs out (or all players have voted), tally votes, announce result, and advance stage"
 if (isPhaseActive)
 # If time is up or every player has voted
@@ -216,7 +245,7 @@ if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers()
     TallyVotes();
     Wait(3);
     BigMessage(AllPlayers(), <"<0>: <1>", PhaseName, HeroIconString(selectedHero)>);
-    // TODO: Take action on the selected hero
+    SelectedHeroAction();
     AdvanceStageSelection();
     # If the phase is over after advancing to next stage, don't start a new stage.
     AbortIf(endPhaseFlag);
@@ -322,6 +351,13 @@ disabled rule: "====EXTRA BAN PHASE====" {}
 
 disabled rule: "====NORMAL GAMEPLAY====" {}
 
+void FinalCleanup() "[SUB] Perform cleanup of phase-agnostic elements"
+{
+    foreach(Number text in globalHudText) { DestroyHudText(text); }
+    foreach(Number text in globalIWText) { DestroyInWorldText(text); }
+    foreach(Number eff in globalEffects) { DestroyEffect(eff); }
+}
+
 rule: "Prepare to enter normal gameplay"
 if (currentPhase == Phase.Gameplay)
 {
@@ -329,26 +365,13 @@ if (currentPhase == Phase.Gameplay)
     ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
     # Only allow the heroes in the pool
     SetAllowedHeroes(AllPlayers(), heroPool);
-    # Disable in-game announcer during reset to Assemble Heroes
-    DisableAnnouncer();
-    # Disable messages during reset to Assemble Heroes
-    DisableMessages(AllPlayers());
-    Wait(0.25);
-    // Skip to game in progress momentarily to allow Assemble Heroes to work
-    while (!IsGameInProgress()) {
-        SetMatchTime(0);
-        MinWait();
-    }
-    GoToAssembleHeroes();
-    Wait(0.1);
-    EnableAnnouncer();
-    Wait(3);
-     # Clean up the menu
-    // destroyMenu();
-    // async CleanupTexts();
-    EnableMessages(AllPlayers());
+    # Clean up all texts and effects
+    FinalCleanup();
+    StartGameMode();
+    Wait(2);
+    destroyMenu();
 }
 
-// import "PlayerInterface.del";
-import "ScreenToWorld.del";
+import "PlayerInterface.del";
+// import "ScreenToWorld.del";
 import "coreDebug.ostw";
