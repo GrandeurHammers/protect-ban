@@ -1,4 +1,4 @@
-import "ScreenToWorld.del";
+import "../utils/ScreenToWorld.del";
 
 class ClickArea {
     public define centerX;
