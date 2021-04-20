@@ -6,7 +6,7 @@ import "MapData.del";
 
 import "../utils/ServerLoad.del";
 
-import "../main.ostw";
+// import "../main.ostw";
 
 globalvar Boolean globalCursors = WorkshopSettingToggle("Menu Options", "Show All Cursors", false, 0);
 globalvar Vector menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);

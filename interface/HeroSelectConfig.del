@@ -1,0 +1,69 @@
+import "HeroSelectAnywhere.del";
+
+import "MapData.del";
+
+globalvar Vector camPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
+globalvar Vector camFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
+Number rowWidth: 7;
+Number rowY: -1;
+Number selectBoxScale: 1.5;
+Number contBtnX: cnclBtnWidth / -2;
+Number btnsY: rowY - 0.6;
+Number contBtnWidth: 1.1;
+Number contBtnHeight: 0.3;
+Number cnclBtnX: contBtnWidth / 2;
+Number cnclBtnWidth: 0.66;
+Number cnclBtnHeight: 0.3;
+
+// Workshop settings
+
+globalvar Boolean liteMode = 1 == WorkshopSettingCombo(
+    category:       "Hero Select Anywhere",
+    name:           "Lightweight mode",
+    default:        0,
+    options:        ["Off", "On (overrides other text settings)"],
+    sortOrder:      0
+);
+Boolean controlsText: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Controls texts (1 text)",
+    Default:        true,
+    SortOrder:      1
+);
+Boolean heroDisplay: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Hero display (1 text)",
+    Default:        true,
+    SortOrder:      2
+);
+Boolean roleHeaders: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Role headers (3 texts)",
+    Default:        true,
+    SortOrder:      3
+);
+Boolean roleDividers: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Role dividers (4 texts)",
+    Default:        true,
+    SortOrder:      4
+);
+Boolean cursorBox: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Highlight hovered hero (4 texts)",
+    Default:        true,
+    SortOrder:      5
+);
+Boolean selectedBox: WorkshopSettingToggle(
+    Category:       "Hero Select Anywhere",
+    Name:           "Highlight selected hero (4 texts)",
+    Default:        true,
+    SortOrder:      6
+);
+Boolean fancyButtons: 0 == WorkshopSettingCombo(
+    category:       "Hero Select Anywhere",
+    name:           "Fancy confirm/cancel buttons",
+    default:        0,
+    options:        ["On (4 texts)", "Off (2 texts)"],
+    sortOrder:      7
+);

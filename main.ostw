@@ -62,6 +62,22 @@ void EnableAllHud() {
     EnableScoreboard();
 }
 
+void DisallowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        DisallowButton(EventPlayer(), b);
+    }
+}
+
+void AllowButtons(Button[] buttons)
+{
+    foreach(Button b in buttons) {
+        AllowButton(EventPlayer(), b);
+    }
+}
+
+Button[] allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
+
 rule: "[GLOBAL SETUP] Global setup"
 {
     if (!WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0)) {
@@ -151,7 +167,7 @@ void GoNextPhase() "[STATE MACHINE] When called, transition from current phase t
     }
     BigMessage(Header: <"Starting <0> Phase", PhaseName>);
     ResetVotingPhase();
-    async RefreshCursorVis();
+    // async RefreshCursorVis();
     Wait(3);
     isPhaseActive = true;
     StartVotingStage();
@@ -369,9 +385,8 @@ if (currentPhase == Phase.Gameplay)
     FinalCleanup();
     StartGameMode();
     Wait(2);
-    destroyMenu();
+    // destroyMenu();
 }
 
-import "interface/PlayerInterface.del";
-// import "ScreenToWorld.del";
-import "coreDebug.ostw";
+import "interface/HeroSelectAnywhere.del";
+// import "coreDebug.ostw";
