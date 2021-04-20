@@ -4,7 +4,7 @@
   },
   "Modes": {
     "All": {
-      "Game Mode Start": "Immediately",
+      "Game Mode Start": "Manual",
       "Limit Roles": "2 Of Each Role Per Team"
     },
     "Assault": {
@@ -21,5 +21,5 @@
       "Competitive Rules": true
     }
   },
-  "Description": "Protect & Ban Sys​tem v1.0 by Josbird and CactusPuppy                                  Developed for SVB by the Grandeur Hammers with love"
+  "Description": "Protect & Ban Sys​tem v2.0 by Josbird and CactusPuppy                                  Developed for SVB by the Grandeur Hammers with love"
 }

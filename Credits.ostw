@@ -1,0 +1,8 @@
+globalvar Any[] credits;
+
+rule: "Create about and credits" -1
+{
+    credits[0] = WorkshopSettingCombo("Protect And Ban", "Version", 0, ["1.0.0"],  0);
+    credits[1] = WorkshopSettingCombo("Credits", "Core Logic", 0, ["CactusPuppy"], 1);
+    credits[2] = WorkshopSettingCombo("Credits", "User Interface", 0, ["Josbird"], 2);
+}

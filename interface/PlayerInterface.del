@@ -1,34 +1,36 @@
-import "ScreenToWorld.del";
-import "Math.del";
+import "../utils/ScreenToWorld.del";
+import "../utils/Math.del";
 import "ClickArea.del";
 
 import "MapData.del";
 
-import "ServerLoad.del";
+import "../utils/ServerLoad.del";
 
-import "main.ostw";
+import "../main.ostw";
 
-globalvar define menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
-globalvar define menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
-globalvar define[] playersInMenu = [];
-define AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
+globalvar Boolean globalCursors = WorkshopSettingToggle("Menu Options", "Show All Cursors", false, 0);
+globalvar Vector menuPos = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][0] : Vector(0, 150, 0);
+globalvar Vector menuFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOfArrayValue(maps, CurrentMap())][1] : Forward();
+globalvar Player[] playersInMenu = [];
+Hero[] AllHeroesOrdered: Append(Append(AllTankHeroes(), AllDamageHeroes()), AllSupportHeroes());
 
-define getNthHeroIcon(define n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroesOrdered[n]) ? HeroIconString(AllHeroesOrdered[n]) : 
+String getNthHeroIcon(Number n): n < CountOf(AllHeroes()) ? ArrayContains(heroPool, AllHeroesOrdered[n]) ? HeroIconString(AllHeroesOrdered[n]) :
     ArrayContains(protectedHeroes, AllHeroesOrdered[n]) ? IconString(Icon.Checkmark) : IconString(Icon.No) : IconString(Icon.RingThin);
 globalvar ClickArea[] menuButtons = [];
-globalvar define[] menuTexts = [];
-globalvar define backdropEffect;
-globalvar define resetVisibilityFlag;
+globalvar Number[] menuTexts = [];
+globalvar Number backdropEffect;
+globalvar Boolean resetVisibilityFlag;
 
 rule: "[PlayerInterface.del] Initialize menu"
 {
+    LogToInspector(<"<0>, <1>, <2>", menuPos, menuFacing, menuPos + -0.15 * menuFacing>);
     CreateEffect(
         VisibleTo:          AllPlayers(),
         Type:               Effect.Orb,
         Color:              Color.Black,
-        Position:           menuPos + -0.32 * menuFacing,
+        Position:           EvaluateOnce(menuPos + -0.32 * menuFacing),
         Radius:             1,
-        Reevaluation:       EffectRev.VisibleTo
+        Reevaluation:       EffectRev.VisibleToPositionAndRadius
     );
     backdropEffect = LastCreatedEntity();
     CreateInWorldText(
@@ -142,7 +144,7 @@ if(currentPhase == Phase.Protect)
         Wait(3 * 0.016);
     }
 
-    if (currentPhase == Phase.Normal && IsAssemblingHeroes()) {
+    if (currentPhase == Phase.Gameplay && IsAssemblingHeroes()) {
         AllPlayers().isInMenu = false;
         Abort();
     }
@@ -164,7 +166,7 @@ void AllowButtons(Button[] buttons)
     }
 }
 
-define allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
+Button[] allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
 
 
 disabled rule: "[PlayerInterface.del] Force menu (debug)"
@@ -319,7 +321,7 @@ void makeCursor()
 
 void destroyCursor()
 {
-    foreach(define text in cursorTexts) DestroyInWorldText(text);
+    foreach(Number text in cursorTexts) DestroyInWorldText(text);
 }
 
 rule: "[PlayerInterface.del] Menu bounds"
@@ -337,13 +339,12 @@ Event.OngoingPlayer
 if(isInMenu)
 if(IsButtonHeld(EventPlayer(), Button.PrimaryFire))
 # If in a valid phase
-if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
-# If in the extra bans phase, ensure player is on losing team
-if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
-# If selection time remains
+if (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay)
+# Are you the currently voting team?
+if (TeamOf() == currVotingTeam)
 if (selectTimeRemaining > 0)
 {
-    define clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX(), cursorY()))[0]).clickID;
+    Any clickedID = (<ClickArea>FilteredArray(menuButtons, menuButtons[CurrentArrayIndex()].isHovered(cursorX(), cursorY()))[0]).clickID;
     # If no button clicked, abort
     if (!clickedID) {
         return;
@@ -352,11 +353,6 @@ if (selectTimeRemaining > 0)
     if(ArrayContains(AllHeroes(), clickedID)) {
         # Allow interaction if hero is still in pool
         if(ArrayContains(heroPool, clickedID)) {
-            # De-select if not allowing repeat hero votes and hero is selected
-            if(!allowRepeatHeroVotes && ArrayContains(selectionList, clickedID)) {
-                DeselectHero(clickedID);
-                PlayEffect(EventPlayer(), PlayEffect.ExplosionSound, Color.White, menuPos, 50);
-            } else
             # Prevent selection if too many selected heroes
             if (CountOf(selectionList) >= MaxVotesForPhase) {
                 SmallMessage(EventPlayer(), <@"Max Selected Heroes">);
@@ -374,9 +370,6 @@ if (selectTimeRemaining > 0)
     } else
     # Otherwise, handle clear button
     if(clickedID == "clear") {
-        foreach (define h in selectionList) {
-            ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), h)], Operation.Subtract, 1);
-        }
         selectionList = [];
         PlayEffect(EventPlayer(), PlayEffect.RingExplosionSound, Color.White, menuPos, 50);
     }
@@ -387,7 +380,7 @@ Event.OngoingPlayer
 if(isInMenu)
 if(IsButtonHeld(EventPlayer(), Button.SecondaryFire))
 # If in a valid phase
-if (currentPhase != Phase.Waiting && currentPhase != Phase.Normal)
+if (currentPhase != Phase.Waiting && currentPhase != Phase.Gameplay)
 # If in the extra bans phase, ensure player is on losing team
 if (currentPhase != Phase.ExtraBan || TeamOf() == losingTeam)
 # If selection time remains
@@ -409,14 +402,12 @@ if (selectTimeRemaining > 0)
     }
 }
 
-void SelectHero(define hero) {
-    ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), hero)], Operation.Add, 1);
+void SelectHero(Hero hero) {
     ModifyVariable(selectionList, Operation.AppendToArray, hero);
 }
 
-void DeselectHero(define hero) {
-    ModifyVariable(resultsTally[IndexOfArrayValue(AllHeroes(), hero)], Operation.Subtract, 1);
-    ModifyVariable(selectionList, Operation.RemoveFromArrayByIndex, IndexOfArrayValue(selectionList, hero));
+void DeselectHero(Hero hero) {
+    ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, hero);
 }
 
 playervar define mightBeStuckPrompt;
