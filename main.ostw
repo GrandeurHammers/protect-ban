@@ -131,7 +131,6 @@ if (currentPhase == Phase.Gameplay)
 void StartVotingStage() "[TIMER] Start stage timer"
 {
     # Start a new stage
-    BigMessage(Header: <"<0> <1>", currVotingTeam, PhaseName>);
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = timePerPhase;
     ChaseVariableAtRate(selectTimeRemaining, 0, 1, RateChaseReevaluation.None);
@@ -167,7 +166,7 @@ void GoNextPhase() "[STATE MACHINE] When called, transition from current phase t
     BigMessage(Header: <"Starting <0> Phase", PhaseName>);
     ResetVotingPhase();
     // async RefreshCursorVis();
-    Wait(3);
+    Wait(4);
     isPhaseActive = true;
     StartVotingStage();
 }
@@ -264,7 +263,7 @@ if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers()
     AdvanceStageSelection();
     # If the phase is over after advancing to next stage, don't start a new stage.
     AbortIf(endPhaseFlag);
-    Wait(3);
+    Wait(4);
     StartVotingStage();
 }
 
@@ -277,7 +276,7 @@ if (endPhaseFlag)
     # Wait to let previous Big Message finish
     Wait(3);
     BigMessage(Header: <"<0> Phase Finished", PhaseName>);
-    Wait(3);
+    Wait(4);
     GoNextPhase();
 }
 
@@ -303,7 +302,7 @@ if (currentPhase == Phase.Waiting)
     );
     ModifyVariable(phaseIWText, Operation.AppendToArray, LastTextID());
     CreateHudText(
-        VisibleTo: AllPlayers(),
+        VisibleTo: null,
         Header: <"<0>/<1> <2> <3>",
             CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))),
             NumberOfPlayers(),
