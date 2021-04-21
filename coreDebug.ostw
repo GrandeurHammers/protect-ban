@@ -1,6 +1,6 @@
 import "main.ostw";
 
-rule: "[DEBUG] Show some HUDs and stuff" 
+disabled rule: "[DEBUG] Show some HUDs and stuff"
 {
     CreateHudText(
         VisibleTo: AllPlayers(),
@@ -23,12 +23,12 @@ rule: "[DEBUG] Show some HUDs and stuff"
     );
 }
 
-rule: "[DEBUG] Create temporary hero pool"
+disabled rule: "[DEBUG] Create temporary hero pool"
 {
     heroPool = AllHeroes();
 }
 
-rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
+disabled rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
 Event.OngoingPlayer
 if (IsButtonHeld(Button: Button.Interact))
 {
@@ -37,4 +37,13 @@ if (IsButtonHeld(Button: Button.Interact))
         return;
     }
     ModifyVariable(selectionList, Operation.AppendToArray, HeroOf());
+}
+
+rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"
+if (IsAssemblingHeroes())
+{
+    Wait(5);
+    LogToInspector(
+        <"Text: <0> | Eff: <1>", TextCount(), EntityCount()>
+    );
 }

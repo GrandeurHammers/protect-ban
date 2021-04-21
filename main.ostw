@@ -27,8 +27,8 @@ globalvar Number stageStreakRemaining;
 globalvar Number[] phaseHudText = []; // HUD texts to clean up at next phase transition
 globalvar Number[] phaseIWText = []; // In-world texts to clean up at next phase transition
 globalvar Number[] globalHudText = []; // HUD Text to clean up when mode is complete
-globalvar Number[] globalIWText = [];
-globalvar Number[] globalEffects = [];
+globalvar Number[] globalIWText = []; // In-world texts to clean up when mode is complete
+globalvar Number[] globalEffects = []; // Effects to clean up when mode is complete
 globalvar Number i 127;
 
 playervar Hero[] selectionList = [];
@@ -78,15 +78,14 @@ void AllowButtons(Button[] buttons)
 
 Button[] allButtons: [Button.PrimaryFire, Button.SecondaryFire, Button.Ability1, Button.Ability2, Button.Ultimate, Button.Crouch, Button.Interact, Button.Jump, Button.Melee, Button.Reload];
 
+globalvar Boolean inspectorEnabled = WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0);
 rule: "[GLOBAL SETUP] Global setup"
 {
-    if (!WorkshopSettingToggle("Debug", "Inspector Enabled", false, 0)) {
+    if (!inspectorEnabled) {
         DisableInspectorRecording();
     }
     # Convert integer selection of Extras team to team constants
     losingTeam = [null, Team.Team1, Team.Team2][losingTeam];
-    # Set initial objective description
-    SetObjectiveDescription(AllPlayers(), "Waiting for Players", HudTextRev.VisibleTo);
 }
 
 rule: "[PLAYER SETUP] Force player out of initial hero select on spawn and handle conditional enable/disables"
@@ -385,8 +384,9 @@ if (currentPhase == Phase.Gameplay)
     FinalCleanup();
     StartGameMode();
     Wait(2);
-    // destroyMenu();
+    destroyMenu();
 }
 
 import "interface/HeroSelectAnywhere.del";
-// import "coreDebug.ostw";
+import "coreDebug.ostw";
+import "interface/miscSetup.del";
