@@ -64,18 +64,19 @@ Event.OngoingPlayer
 if (isInMenu)
 if (IsButtonHeld(EventPlayer(), Button.PrimaryFire))
 {
+    #Ready button
+    if (cursorOnReadyButton() && shouldShowReadyButton(EventPlayer())) {
+        isReady = !isReady;
+        playButtonSound();
+        return;
+    }
+
     if (!cursorInHeroArea()) return;
     if (!shouldAllowSelection(EventPlayer())) return;
     if (!isHeroSelectable(heroesSorted[cursorHeroIndex(cursor.getX())])) return;
 
     selectionIndex = cursorHeroIndex(cursor.getX());
-    selectHero(heroesSorted[cursorHeroIndex(cursor.getX())]);
     playButtonSound();
-}
-
-void selectHero(Hero h!) "[HeroSelectAnywhere.del] (Subroutine) Select hero"
-{
-    votedHero = h;
 }
 
 rule: "[HeroSelectAnywhere.del] Deselect disallowed hero"
@@ -84,9 +85,7 @@ if (!liteMode)
 if (isInMenu)
 if (!isHeroSelectable(heroesSorted[selectionIndex]))
 {
-    selectionIndex = HeroOf() == null ? 
-        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) : 
-        IndexOfArrayValue(heroesSorted, HeroOf());
+    selectionIndex = RandomValueInArray(MappedArray(heroPool, IndexOfArrayValue(heroesSorted, ArrayElement())));
 }
 
 globalvar Hero[] TankHeroes;
@@ -263,6 +262,28 @@ rule: "[HeroSelectAnywhere.del] Main setup"
             Spectators:     Spectators.VisibleNever
         );
     }
+    CreateInWorldText(
+        VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+        Header:         "▒▒▒▒▒",
+        Position:       screenPos(readyBtnX, btnsY),
+        Scale:          4,
+        TextColor:      !shouldShowReadyButton() ? CustomColor(0,0,0,0) : LocalPlayer().isReady ? CustomColor(0, 162, 255, 255) : CustomColor(255, 153, 0, 255),
+        Clipping:       Clipping.DoNotClip,
+        Reevaluation:   InworldTextRev.VisibleToAndColor,
+        Spectators:     Spectators.VisibleNever
+    );
+    ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
+    CreateInWorldText(
+        VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+        Header:         LocalPlayer().isReady ? "Unready" : "Ready",
+        Position:       screenPos(readyBtnX, btnsY - 0.01),
+        Scale:          3,
+        TextColor:      !shouldShowReadyButton() ? CustomColor(0,0,0,0) : Color.White,
+        Clipping:       Clipping.DoNotClip,
+        Reevaluation:   InworldTextRev.VisibleToStringAndColor,
+        Spectators:     Spectators.VisibleNever
+    );
+    ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
 
     CreateInWorldText(
         VisibleTo:      visibleIf(LocalPlayer().cursor != null),
@@ -325,9 +346,15 @@ Number iconBorderOffset: rowWidth / CountOf(heroesSorted) / 2;
 Boolean cursorInHeroArea(Player p = EventPlayer()):
     Math.IsInRange(p.cursor.getX(), rowWidth / -2, rowWidth / 2) &&
     Math.IsInRange(p.cursor.getY(), rowY - iconBorderOffset * 1.5, rowY + iconBorderOffset * 1.5);
-Boolean cursorOnClearBtn(Player p = EventPlayer()):
-    Math.IsInRange(p.cursor.getX(), clearBtnX - clearBtnWidth / 2, clearBtnX + clearBtnWidth / 2) &&
-    Math.IsInRange(p.cursor.getY(), btnsY - clearBtnHeight / 2, btnsY + clearBtnHeight / 2);
+Boolean cursorOnReadyButton(Player p = EventPlayer()):
+    Math.IsInRange(p.cursor.getX(), readyBtnX - readyBtnWidth / 2, readyBtnX + readyBtnWidth / 2) &&
+    Math.IsInRange(p.cursor.getY(), btnsY - readyBtnHeight / 2, btnsY + readyBtnHeight / 2);
+
+Boolean shouldShowReadyButton(Player p = LocalPlayer()):
+    p.isInMenu && (
+        currentPhase == Phase.Waiting ||
+        currentPhase < Phase.Gameplay && shouldAllowSelection(p)
+    );
 void playButtonSound()
 {
     PlayEffect(

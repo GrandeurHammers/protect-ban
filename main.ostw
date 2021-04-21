@@ -6,7 +6,7 @@ globalvar Number numBans = WorkshopSettingInteger("Ban", "Hero Bans Per Team", 1
 globalvar Team | Number losingTeam = WorkshopSettingCombo("Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
 globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1, 1, 15, 11);
 globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Phase", 20, 5, 120, 9.9);
-globalvar Number progressOnMaxVotes = WorkshopSettingToggle("General", "Skip Timer When All Players Have Max Selections", true, 100);
+globalvar Number progressWhenAllReady = WorkshopSettingToggle("General", "Skip Timer When All Players Are Ready", true, 100);
 globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
 // END CUSTOMIZATION
 globalvar Hero[] protectedHeroes = [];
@@ -28,8 +28,7 @@ globalvar Number[] globalIWText = []; // In-world texts to clean up when mode is
 globalvar Number[] globalEffects = []; // Effects to clean up when mode is complete
 globalvar Number i 127;
 
-playervar Hero votedHero;
-playervar Number[] personalEffects = [];
+playervar Boolean isReady;
 
 Number MaxSelectionsForPhase: [numProtects, numBans, losingTeamBans][<Number>currentPhase - 1];
 Number MaxVotesPerStage: 1;
@@ -127,6 +126,8 @@ if (currentPhase == Phase.Gameplay)
 
 void StartVotingStage() "[TIMER] Start stage timer"
 {
+    # Reset ready flags
+    AllPlayers().isReady = false;
     # Start a new stage
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = timePerPhase;
@@ -219,15 +220,13 @@ void TallyVotes() "[SUB] Tally votes and select most voted hero (break ties rand
     selectedHero = MappedArray(heroPool, 0);
     votingPlayers = AllPlayers(currVotingTeam);
     for (i = 0; CountOf(votingPlayers); 1) {
-        if (IndexOfArrayValue(heroPool, votingPlayers[i].votedHero) != -1) {
-            selectedHero[IndexOfArrayValue(heroPool, votingPlayers[i].votedHero)] += 1;
+        if (IndexOfArrayValue(heroPool, heroesSorted[votingPlayers[i].selectionIndex]) != -1) {
+            selectedHero[IndexOfArrayValue(heroPool, heroesSorted[votingPlayers[i].selectionIndex])] += 1;
         }
     }
     # Choose randomly from list of most voted heroes
     i = LastOf(SortedArray(selectedHero));
     selectedHero = RandomValueInArray(FilteredArray(heroPool, selectedHero[CurrentArrayIndex()] == i));
-    # Reset player selection lists
-    AllPlayers().votedHero = null;
 }
 
 void SelectedHeroAction() "[SUB] Take action for selected hero"
@@ -246,8 +245,8 @@ void SelectedHeroAction() "[SUB] Take action for selected hero"
 
 rule: "[STAGE END HANDLER] When time runs out (or all players have voted), tally votes, announce result, and advance stage"
 if (isPhaseActive)
-# If time is up or every player has voted
-if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().votedHero) == MaxVotesPerStage)))
+# If time is up or every player has readied
+if (selectTimeRemaining == 0 || (progressWhenAllReady && IsTrueForAll(AllPlayers(currVotingTeam), ArrayElement().isReady)))
 {
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = 0;
@@ -261,6 +260,7 @@ if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers()
     AbortIf(endPhaseFlag);
     Wait(4);
     StartVotingStage();
+    LoopIfConditionIsTrue();
 }
 
 rule: "[PHASE END HANDLER] When phase ends, announce phase end and transition phases"
@@ -284,10 +284,10 @@ if (currentPhase == Phase.Waiting)
     CreateInWorldText(
         VisibleTo:          visibleIf(LocalPlayer().isInMenu),
         Header:             <"<0>/<1> <2> <3>",
-                                CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))),
+                                CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)),
                                 NumberOfPlayers(),
                                 @"Players",
-                                @"Spawned"
+                                @"Ready"
                             >,
         Position:           OnScreenText.WorldRender(camPos, camFacing, 0, 1.3),
         Clipping:           Clipping.DoNotClip,
@@ -299,10 +299,10 @@ if (currentPhase == Phase.Waiting)
     CreateHudText(
         VisibleTo: null,
         Header: <"<0>/<1> <2> <3>",
-            CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))),
+            CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)),
             NumberOfPlayers(),
             @"Players",
-            @"Spawned"
+            @"Ready"
         >,
         Location: Location.Top,
         SortOrder: 1,
@@ -317,11 +317,9 @@ if (IsWaitingForPlayers())
 if (currentPhase == Phase.Waiting)
 # Ensure at least one player is playing
 if (NumberOfPlayers() > 0)
-# Wait for everyone to spawn in
-if (IsTrueForAll(AllPlayers(), HasSpawned(ArrayElement())))
+# Wait for everyone to be ready
+if (IsTrueForAll(AllPlayers(), ArrayElement().isReady))
 {
-    BigMessage(AllPlayers(), "Starting in 15 seconds...");
-    Wait(5);
     BigMessage(AllPlayers(), "Starting in 10 seconds...");
     Wait(5);
     BigMessage(AllPlayers(), "Starting in 5 seconds...");

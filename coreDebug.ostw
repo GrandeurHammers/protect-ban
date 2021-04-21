@@ -8,11 +8,6 @@ disabled rule: "[DEBUG] Show some HUDs and stuff"
         Location: Location.Left,
         Reevaluation: HudTextRev.VisibleToAndString
     );
-    CreateHudText(
-        VisibleTo: LocalPlayer() != null ? LocalPlayer() : null,
-        Header: <"Selected Heroes: <0> <1>", LocalPlayer().votedHero[0], LocalPlayer().votedHero[1]>,
-        SortOrder: 2
-    );
     CreateProgressBarHudText(
         VisibleTo:      selectTimeRemaining > 0 ? AllPlayers() : null,
         Value:          selectTimeRemaining / timePerPhase * 100,
@@ -26,17 +21,6 @@ disabled rule: "[DEBUG] Show some HUDs and stuff"
 disabled rule: "[DEBUG] Create temporary hero pool"
 {
     heroPool = AllHeroes();
-}
-
-disabled rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
-Event.OngoingPlayer
-if (IsButtonHeld(Button: Button.Interact))
-{
-    if (ArrayContains(votedHero, HeroOf())) {
-        ModifyVariable(votedHero, Operation.RemoveFromArrayByValue, HeroOf());
-        return;
-    }
-    ModifyVariable(votedHero, Operation.AppendToArray, HeroOf());
 }
 
 rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"

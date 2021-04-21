@@ -7,10 +7,10 @@ globalvar Vector camFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOf
 Number rowWidth: 7;
 Number rowY: -1;
 Number selectBoxScale: 1.5;
-Number clearBtnX: 0;
+Number readyBtnX: 0;
 Number btnsY: rowY - 0.6;
-Number clearBtnWidth: 1.1;
-Number clearBtnHeight: 0.3;
+Number readyBtnWidth: 1.1;
+Number readyBtnHeight: 0.3;
 
 // Workshop settings
 
