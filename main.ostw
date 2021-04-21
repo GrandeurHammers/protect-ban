@@ -287,6 +287,21 @@ rule: "[PHASE: WAITING] Setup HUD"
 if (currentPhase == Phase.Waiting)
 {
     // TODO: Create Waiting for Players IWT HUD for players
+    CreateInWorldText(
+        VisibleTo:          visibleIf(LocalPlayer().isInMenu),
+        Header:             <"<0>/<1> <2> <3>",
+                                CountOf(FilteredArray(AllPlayers(), HasSpawned(ArrayElement()))),
+                                NumberOfPlayers(),
+                                @"Players",
+                                @"Spawned"
+                            >,
+        Position:           OnScreenText.WorldRender(camPos, camFacing, 0, 1.3),
+        Clipping:           Clipping.DoNotClip,
+        Scale:              3,
+        Reevaluation:       InworldTextRev.VisibleToPositionAndString,
+        Spectators:         Spectators.VisibleNever
+    );
+    ModifyVariable(phaseIWText, Operation.AppendToArray, LastTextID());
     CreateHudText(
         VisibleTo: AllPlayers(),
         Header: <"<0>/<1> <2> <3>",
@@ -368,6 +383,8 @@ disabled rule: "====NORMAL GAMEPLAY====" {}
 
 void FinalCleanup() "[SUB] Perform cleanup of phase-agnostic elements"
 {
+    DestroyAllProgressBarHudText();
+    DestroyAllProgressBarInWorldText();
     foreach(Number text in globalHudText) { DestroyHudText(text); }
     foreach(Number text in globalIWText) { DestroyInWorldText(text); }
     foreach(Number eff in globalEffects) { DestroyEffect(eff); }
