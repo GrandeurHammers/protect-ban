@@ -1,7 +1,8 @@
 import "../main.ostw";
 
-rule: "Create central HUD elements"
+rule: "Create additional on-screen elements"
 {
+    # Center elements
     CreateProgressBarInWorldText(
         VisibleTo:          visibleIf(selectTimeRemaining > 0),
         Value:              selectTimeRemaining / timePerPhase * 100,
@@ -19,6 +20,28 @@ rule: "Create central HUD elements"
         Scale:              4,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
+        Spectators:         Spectators.VisibleNever
+    );
+    ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    # Left-side elements
+    CreateInWorldText(
+        VisibleTo:          AllPlayers(),
+        Header:             @"Protected Heroes",
+        Position:           OnScreenText.WorldRender(camPos, camFacing, -2.5, 1.5),
+        Scale:              3,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleTo,
+        Spectators:         Spectators.VisibleNever
+    );
+    ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    # Right-side elements
+    CreateInWorldText(
+        VisibleTo:          AllPlayers(),
+        Header:             @"Banned Heroes",
+        Position:           OnScreenText.WorldRender(camPos, camFacing, 2.5, 1.5),
+        Scale:              3,
+        Clipping:           Clipping.DoNotClip,
+        Reevaluation:       InworldTextRev.VisibleTo,
         Spectators:         Spectators.VisibleNever
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
