@@ -7,13 +7,10 @@ globalvar Vector camFacing = ArrayContains(maps, CurrentMap()) ? mapData[IndexOf
 Number rowWidth: 7;
 Number rowY: -1;
 Number selectBoxScale: 1.5;
-Number contBtnX: cnclBtnWidth / -2;
+Number clearBtnX: 0;
 Number btnsY: rowY - 0.6;
-Number contBtnWidth: 1.1;
-Number contBtnHeight: 0.3;
-Number cnclBtnX: contBtnWidth / 2;
-Number cnclBtnWidth: 0.66;
-Number cnclBtnHeight: 0.3;
+Number clearBtnWidth: 1.1;
+Number clearBtnHeight: 0.3;
 
 // Workshop settings
 
@@ -23,12 +20,6 @@ globalvar Boolean liteMode = 1 == WorkshopSettingCombo(
     default:        0,
     options:        ["Off", "On (overrides other text settings)"],
     sortOrder:      0
-);
-Boolean controlsText: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
-    Name:           "Controls texts (1 text)",
-    Default:        true,
-    SortOrder:      1
 );
 Boolean heroDisplay: WorkshopSettingToggle(
     Category:       "Hero Select Anywhere",
@@ -59,11 +50,4 @@ Boolean selectedBox: WorkshopSettingToggle(
     Name:           "Highlight selected hero (4 texts)",
     Default:        true,
     SortOrder:      6
-);
-Boolean fancyButtons: 0 == WorkshopSettingCombo(
-    category:       "Hero Select Anywhere",
-    name:           "Fancy confirm/cancel buttons",
-    default:        0,
-    options:        ["On (4 texts)", "Off (2 texts)"],
-    sortOrder:      7
 );

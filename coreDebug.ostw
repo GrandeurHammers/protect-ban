@@ -10,7 +10,7 @@ disabled rule: "[DEBUG] Show some HUDs and stuff"
     );
     CreateHudText(
         VisibleTo: LocalPlayer() != null ? LocalPlayer() : null,
-        Header: <"Selected Heroes: <0> <1>", LocalPlayer().selectionList[0], LocalPlayer().selectionList[1]>,
+        Header: <"Selected Heroes: <0> <1>", LocalPlayer().votedHero[0], LocalPlayer().votedHero[1]>,
         SortOrder: 2
     );
     CreateProgressBarHudText(
@@ -32,11 +32,11 @@ disabled rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
 Event.OngoingPlayer
 if (IsButtonHeld(Button: Button.Interact))
 {
-    if (ArrayContains(selectionList, HeroOf())) {
-        ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, HeroOf());
+    if (ArrayContains(votedHero, HeroOf())) {
+        ModifyVariable(votedHero, Operation.RemoveFromArrayByValue, HeroOf());
         return;
     }
-    ModifyVariable(selectionList, Operation.AppendToArray, HeroOf());
+    ModifyVariable(votedHero, Operation.AppendToArray, HeroOf());
 }
 
 rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"

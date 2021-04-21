@@ -32,8 +32,8 @@ if (isInMenu)
         EyePosition:    camPos,
         LookAtPosition: camPos + camFacing,
     );
-    if (!liteMode) selectionIndex = HeroOf() == null ? 
-        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroAllowed(ArrayElement()))) : 
+    selectionIndex = HeroOf() == null ? 
+        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) : 
         IndexOfArrayValue(heroesSorted, HeroOf());
     MinWait();
     cursor = new Cursor(-3.75, 3.75, -2, 2);
@@ -64,57 +64,28 @@ Event.OngoingPlayer
 if (isInMenu)
 if (IsButtonHeld(EventPlayer(), Button.PrimaryFire))
 {
-    if (!liteMode) {
-        if (cursorInHeroArea() && isHeroAllowed(heroesSorted[cursorHeroIndex(cursor.getX())])) {
-            selectionIndex = cursorHeroIndex(cursor.getX());
-            playButtonSound();
-            WaitUntil(!IsButtonHeld(EventPlayer(), Button.PrimaryFire), 0.25);
-            if (IsButtonHeld(EventPlayer(), Button.PrimaryFire)) Abort();
-            WaitUntil(IsButtonHeld(EventPlayer(), Button.PrimaryFire), 0.25);
-            if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) Abort();
-            else if (cursorHeroIndex(cursor.getX()) != selectionIndex)
-            {
-                if (isHeroAllowed(heroesSorted[cursorHeroIndex(cursor.getX())]))
-                {
-                    selectionIndex = cursorHeroIndex(cursor.getX());
-                    playButtonSound();
-                }
-                Abort();
-            }
-            else
-            {
-                switchToHero(heroesSorted[selectionIndex]);
-                exitHeroSelect();
-            }
-        }
-        else if (cursorOnCnclBtn(EventPlayer())) {
-            exitHeroSelect();
-        }
-        else if (cursorOnContBtn(EventPlayer())) {
-            switchToHero(heroesSorted[selectionIndex]);
-            exitHeroSelect();
-        }
-    }
-    else if (cursorInHeroArea() && isHeroAllowed(heroesSorted[cursorHeroIndex(cursor.getX())])) {
-        switchToHero(heroesSorted[cursorHeroIndex(cursor.getX())]);
-        exitHeroSelect();
-    }
+    if (!cursorInHeroArea()) return;
+    if (!shouldAllowSelection(EventPlayer())) return;
+    if (!isHeroSelectable(heroesSorted[cursorHeroIndex(cursor.getX())])) return;
+
+    selectionIndex = cursorHeroIndex(cursor.getX());
+    selectHero(heroesSorted[cursorHeroIndex(cursor.getX())]);
+    playButtonSound();
 }
 
-void switchToHero(Hero h!) "[HeroSelectAnywhere.del] (Subroutine) Switch hero"
+void selectHero(Hero h!) "[HeroSelectAnywhere.del] (Subroutine) Select hero"
 {
-    ForcePlayerHero(EventPlayer(), h);
-    StopForcingHero(EventPlayer());
+    votedHero = h;
 }
 
 rule: "[HeroSelectAnywhere.del] Deselect disallowed hero"
 Event.OngoingPlayer
 if (!liteMode)
 if (isInMenu)
-if (!isHeroAllowed(heroesSorted[selectionIndex]))
+if (!isHeroSelectable(heroesSorted[selectionIndex]))
 {
     selectionIndex = HeroOf() == null ? 
-        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroAllowed(ArrayElement()))) : 
+        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) : 
         IndexOfArrayValue(heroesSorted, HeroOf());
 }
 
@@ -142,7 +113,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         VisibleTo:      LocalPlayer(),
         Type:           Effect.Orb,
         Color:          Color.Black,
-        Position:       Math.WorldVectorForPositionWithPitch(Vector(0, 0, -0.32), camPos, camFacing, true),
+        Position:       Math.WorldVectorForPositionWithPitch(Vector(0, 0, -0.31), camPos, camFacing, true),
         Reevaluation:   EffectRev.VisibleToPositionAndRadius
     );
     backdropEffect = LastCreatedEntity();
@@ -166,10 +137,12 @@ rule: "[HeroSelectAnywhere.del] Main setup"
     }
     if (heroDisplay) { CreateInWorldText(
             VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         <"┌ ─ ┐\n│<0>│\n└ ─ ┘", 
-                ArrayContains([Hero.Doomfist, Hero.Ashe], heroesSorted[LocalPlayer().selectionIndex]) ?
-                    <" <0>", HeroIconString(heroesSorted[LocalPlayer().selectionIndex])> :
-                    <"<0> ", HeroIconString(heroesSorted[LocalPlayer().selectionIndex])>>,
+            Header:         shouldAllowSelection() ?
+                                <"┌ ─ ┐\n│<0>│\n└ ─ ┘", 
+                                ArrayContains([Hero.Doomfist, Hero.Ashe], heroesSorted[LocalPlayer().selectionIndex]) ?
+                                        <" <0>", HeroIconString(heroesSorted[LocalPlayer().selectionIndex])> :
+                                        <"<0> ", HeroIconString(heroesSorted[LocalPlayer().selectionIndex])>> :
+                                <" \n<0>\n", IconString(Icon.No)>,
             Position:       screenPos(0, 0),
             Scale:          4,
             TextColor:      Color.White,
@@ -263,7 +236,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
 
     if (cursorBox) {
         createSelectionBox(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+            VisibleTo:      visibleIf(LocalPlayer().isInMenu && shouldAllowSelection()),
             CenterX:        heroX(cursorHeroIndex(LocalPlayer().cursor.getX())),
             CenterY:        rowY + 0.02,
             Width:          2 * iconBorderOffset,
@@ -271,7 +244,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
             TextScale:      selectBoxScale,
             Color:          cursorInHeroArea(LocalPlayer()) &&
                 cursorHeroIndex(LocalPlayer().cursor.getX()) != LocalPlayer().selectionIndex &&
-                isHeroAllowed(heroesSorted[cursorHeroIndex(LocalPlayer().cursor.getX())], LocalPlayer()) ?
+                isHeroSelectable(heroesSorted[cursorHeroIndex(LocalPlayer().cursor.getX())], LocalPlayer()) ?
                 Color.White : null,
             Reevaluation:   InworldTextRev.VisibleToPositionAndColor,
             Spectators:     Spectators.VisibleNever
@@ -279,7 +252,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
     }
     if (selectedBox) {
         createSelectionBox(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+            VisibleTo:      visibleIf(LocalPlayer().isInMenu && shouldAllowSelection()),
             CenterX:        heroX(LocalPlayer().selectionIndex),
             CenterY:        rowY + 0.02,
             Width:          2 * iconBorderOffset,
@@ -289,76 +262,6 @@ rule: "[HeroSelectAnywhere.del] Main setup"
             Reevaluation:   InworldTextRev.VisibleToAndPosition,
             Spectators:     Spectators.VisibleNever
         );
-    }
-    if (fancyButtons) {
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "▒▒▒▒▒",
-            Position:       screenPos(contBtnX, btnsY),
-            Scale:          4,
-            TextColor:      cursorOnContBtn(LocalPlayer()) ? CustomColor(207, 124, 0, 255) : CustomColor(255, 153, 0, 255),
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleToAndColor,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "CONTINUE",
-            Position:       screenPos(contBtnX, btnsY - 0.01),
-            Scale:          3,
-            TextColor:      Color.White,
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleTo,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "▒▒▒",
-            Position:       screenPos(cnclBtnX, btnsY),
-            Scale:          4,
-            TextColor:      cursorOnCnclBtn(LocalPlayer()) ? CustomColor(0, 125, 197, 255) : CustomColor(0, 162, 255, 255),
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleToAndColor,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "CANCEL",
-            Position:       screenPos(cnclBtnX, btnsY),
-            Scale:          2.5,
-            TextColor:      Color.White,
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleTo,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
-    }
-    else {
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "CONTINUE",
-            Position:       screenPos(contBtnX, btnsY - 0.01),
-            Scale:          3,
-            TextColor:      CustomColor(255, 153, 0, 255),
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleTo,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
-        CreateInWorldText(
-            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
-            Header:         "CANCEL",
-            Position:       screenPos(cnclBtnX, btnsY),
-            Scale:          2.5,
-            TextColor:      CustomColor(0, 162, 255, 255),
-            Clipping:       Clipping.DoNotClip,
-            Reevaluation:   InworldTextRev.VisibleTo,
-            Spectators:     Spectators.VisibleNever
-        );
-        ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     }
 
     CreateInWorldText(
@@ -403,38 +306,28 @@ void createSelectionBox(
         TextScale, Clipping.DoNotClip, Reevaluation, Color, Spectators);
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
 }
+
+Boolean shouldAllowSelection(Player p = LocalPlayer()):
+    (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay) && currVotingTeam == TeamOf(p) && selectTimeRemaining > 0;
+
 Player visibleIf(Boolean condition): 
     condition ? LocalPlayer() : null;
 String heroString(Number n): 
-    Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroAllowed(heroesSorted[n], LocalPlayer()) ? 
+    Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroSelectable(heroesSorted[n], LocalPlayer()) ? 
         HeroIconString(heroesSorted[n]) : IconString(Icon.No) : "      ";
 Number heroX(Number n):
     rowWidth / -2 + (rowWidth / CountOf(heroesSorted)) * (n + 0.5);
 Number cursorHeroIndex(Number x):
     Math.Floor((x / iconBorderOffset + CountOf(heroesSorted)) / 2);
-Boolean isHeroAllowed(Hero h, Player p = EventPlayer()): 
-    ArrayContains(AllowedHeroes(p), h);
+Boolean isHeroSelectable(Hero h, Player p = EventPlayer()): 
+    ArrayContains(heroPool, h);
 Number iconBorderOffset: rowWidth / CountOf(heroesSorted) / 2;
 Boolean cursorInHeroArea(Player p = EventPlayer()):
     Math.IsInRange(p.cursor.getX(), rowWidth / -2, rowWidth / 2) &&
     Math.IsInRange(p.cursor.getY(), rowY - iconBorderOffset * 1.5, rowY + iconBorderOffset * 1.5);
-Boolean cursorOnContBtn(Player p = EventPlayer()):
-    Math.IsInRange(p.cursor.getX(), contBtnX - contBtnWidth / 2, contBtnX + contBtnWidth / 2) &&
-    Math.IsInRange(p.cursor.getY(), btnsY - contBtnHeight / 2, btnsY + contBtnHeight / 2);
-Boolean cursorOnCnclBtn(Player p = EventPlayer()):
-    Math.IsInRange(p.cursor.getX(), cnclBtnX - cnclBtnWidth / 2, cnclBtnX + cnclBtnWidth / 2) &&
-    Math.IsInRange(p.cursor.getY(), btnsY - cnclBtnHeight / 2, btnsY + cnclBtnHeight / 2);
-void exitHeroSelect()
-{
-    isInMenu = null;
-    Wait(0.1);
-    PlayEffect(
-        VisibleTo:      EventPlayer(),
-        Type:           PlayEffect.BuffImpactSound,
-        Position:       EyePosition() + FacingDirectionOf(),
-        Radius:         75
-    );
-}
+Boolean cursorOnClearBtn(Player p = EventPlayer()):
+    Math.IsInRange(p.cursor.getX(), clearBtnX - clearBtnWidth / 2, clearBtnX + clearBtnWidth / 2) &&
+    Math.IsInRange(p.cursor.getY(), btnsY - clearBtnHeight / 2, btnsY + clearBtnHeight / 2);
 void playButtonSound()
 {
     PlayEffect(

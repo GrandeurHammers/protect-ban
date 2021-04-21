@@ -3,11 +3,8 @@ import "Credits.ostw";
 
 globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects", 1, 0, 15, 2);
 globalvar Number numBans = WorkshopSettingInteger("Ban", "Hero Bans", 1, 0, 15, 0);
-globalvar Number maxProtectVotes = WorkshopSettingInteger("Protect", "Protect Votes Per Player", 2, 1, 15, 3);
-globalvar Number maxBanVotes = WorkshopSettingInteger("Ban", "Ban Votes Per Player", 2, 1, 15, 1);
 globalvar Team | Number losingTeam = WorkshopSettingCombo("Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
 globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1, 1, 15, 11);
-globalvar Number losingTeamBanVotes = WorkshopSettingInteger("Ban", "Extra Ban Votes Per Player", 2, 1, 15, 12);
 globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Phase", 20, 5, 120, 9.9);
 globalvar Number progressOnMaxVotes = WorkshopSettingToggle("General", "Skip Timer When All Players Have Max Selections", true, 100);
 globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
@@ -31,11 +28,11 @@ globalvar Number[] globalIWText = []; // In-world texts to clean up when mode is
 globalvar Number[] globalEffects = []; // Effects to clean up when mode is complete
 globalvar Number i 127;
 
-playervar Hero[] selectionList = [];
+playervar Hero votedHero;
 playervar Number[] personalEffects = [];
 
 Number MaxSelectionsForPhase: [numProtects, numBans, losingTeamBans][<Number>currentPhase - 1];
-Number MaxVotesForPhase: [maxBanVotes, maxProtectVotes, losingTeamBanVotes][IndexOfArrayValue([Phase.Ban, Phase.Protect, Phase.ExtraBan], currentPhase)];
+Number MaxVotesPerStage: 1;
 Number TeamIndex(Team team): IndexOfArrayValue([Team.Team1, Team.Team2], team);
 Number STREAK_LENGTH: 2;
 String PhaseName: ["Waiting", "Protect", "Ban", "Extra Ban", "Gameplay"][currentPhase];
@@ -222,16 +219,15 @@ void TallyVotes() "[SUB] Tally votes and select most voted hero (break ties rand
     selectedHero = MappedArray(heroPool, 0);
     votingPlayers = AllPlayers(currVotingTeam);
     for (i = 0; CountOf(votingPlayers); 1) {
-        selectedHero = MappedArray(
-            selectedHero,
-            ArrayElement() + (ArrayContains(votingPlayers[i].selectionList, heroPool[CurrentArrayIndex()]) ? 1 : 0)
-        );
+        if (IndexOfArrayValue(heroPool, votingPlayers[i].votedHero) != -1) {
+            selectedHero[IndexOfArrayValue(heroPool, votingPlayers[i].votedHero)] += 1;
+        }
     }
     # Choose randomly from list of most voted heroes
     i = LastOf(SortedArray(selectedHero));
     selectedHero = RandomValueInArray(FilteredArray(heroPool, selectedHero[CurrentArrayIndex()] == i));
     # Reset player selection lists
-    AllPlayers().selectionList = [];
+    AllPlayers().votedHero = null;
 }
 
 void SelectedHeroAction() "[SUB] Take action for selected hero"
@@ -251,7 +247,7 @@ void SelectedHeroAction() "[SUB] Take action for selected hero"
 rule: "[STAGE END HANDLER] When time runs out (or all players have voted), tally votes, announce result, and advance stage"
 if (isPhaseActive)
 # If time is up or every player has voted
-if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().selectionList) == MaxVotesForPhase)))
+if (selectTimeRemaining == 0 || (progressOnMaxVotes && IsTrueForAll(AllPlayers(), CountOf(ArrayElement().votedHero) == MaxVotesPerStage)))
 {
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = 0;
