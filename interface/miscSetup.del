@@ -34,6 +34,22 @@ rule: "Create additional on-screen elements"
         Spectators:         Spectators.VisibleNever
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    for (i = 0; numProtects / 2; 1) {
+        CreateInWorldText(
+            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+            Header:         <"<0>  <1>  <2>  <3>",
+                protectHeroString(EvaluateOnce(4 * i + 0)),
+                protectHeroString(EvaluateOnce(4 * i + 1)),
+                protectHeroString(EvaluateOnce(4 * i + 2)),
+                protectHeroString(EvaluateOnce(4 * i + 3))>,
+            Position:       screenPos(-2.5, 1.25 - 0.3 * i),
+            Scale:          3,
+            Clipping:       Clipping.DoNotClip,
+            Reevaluation:   InworldTextRev.VisibleToAndString,
+            Spectators:     Spectators.VisibleNever
+        );
+        ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    }
     # Right-side elements
     CreateInWorldText(
         VisibleTo:          AllPlayers(),
@@ -45,4 +61,28 @@ rule: "Create additional on-screen elements"
         Spectators:         Spectators.VisibleNever
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    for (i = 0; numBans / 2; 1) {
+        CreateInWorldText(
+            VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+            Header:         <"<0>  <1>  <2>  <3>",
+                banHeroString(EvaluateOnce(4 * i + 0)),
+                banHeroString(EvaluateOnce(4 * i + 1)),
+                banHeroString(EvaluateOnce(4 * i + 2)),
+                banHeroString(EvaluateOnce(4 * i + 3))>,
+            Position:       screenPos(2.5, 1.25 - 0.3 * i),
+            Scale:          3,
+            Clipping:       Clipping.DoNotClip,
+            Reevaluation:   InworldTextRev.VisibleToAndString,
+            Spectators:     Spectators.VisibleNever
+        );
+        ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    }
 }
+
+String protectHeroString(Number n):
+    Math.IsInRange(n, 0, numProtects * 2 - 1) ? (n < CountOf(protectedHeroes)) ?
+        HeroIconString(protectedHeroes[n]) : IconString(Icon.QuestionMark) + " " : "       ";
+
+String banHeroString(Number n):
+    Math.IsInRange(n, 0, numBans * 2 - 1) ? (n < CountOf(bannedHeroes)) ?
+        HeroIconString(bannedHeroes[n]) : IconString(Icon.QuestionMark) + " " : "       ";
