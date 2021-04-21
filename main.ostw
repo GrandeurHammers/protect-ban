@@ -1,8 +1,8 @@
 import "customGameSettings.lobby";
 import "Credits.ostw";
 
-globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects", 1, 0, 15, 2);
-globalvar Number numBans = WorkshopSettingInteger("Ban", "Hero Bans", 1, 0, 15, 0);
+globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects Per Team", 1, 0, 15, 2);
+globalvar Number numBans = WorkshopSettingInteger("Ban", "Hero Bans Per Team", 1, 0, 15, 0);
 globalvar Team | Number losingTeam = WorkshopSettingCombo("Ban", "Extra Bans Team", 0, ["None", "Team 1", "Team 2"], 10);
 globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1, 1, 15, 11);
 globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Phase", 20, 5, 120, 9.9);
@@ -281,7 +281,6 @@ disabled rule: "====WAITING PHASE====" {}
 rule: "[PHASE: WAITING] Setup HUD"
 if (currentPhase == Phase.Waiting)
 {
-    // TODO: Create Waiting for Players IWT HUD for players
     CreateInWorldText(
         VisibleTo:          visibleIf(LocalPlayer().isInMenu),
         Header:             <"<0>/<1> <2> <3>",
