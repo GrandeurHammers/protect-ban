@@ -313,8 +313,8 @@ Boolean shouldAllowSelection(Player p = LocalPlayer()):
 Player visibleIf(Boolean condition): 
     condition ? LocalPlayer() : null;
 String heroString(Number n): 
-    Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroSelectable(heroesSorted[n], LocalPlayer()) ? 
-        HeroIconString(heroesSorted[n]) : IconString(Icon.No) : "      ";
+    Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroSelectable(heroesSorted[n], LocalPlayer()) ?
+        HeroIconString(heroesSorted[n]) : (ArrayContains(protectedHeroes, heroesSorted[n]) ? AbilityIconString(Hero.Brigitte, Button.SecondaryFire) : IconString(Icon.No)) : "      ";
 Number heroX(Number n):
     rowWidth / -2 + (rowWidth / CountOf(heroesSorted)) * (n + 0.5);
 Number cursorHeroIndex(Number x):
