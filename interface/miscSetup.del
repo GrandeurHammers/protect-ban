@@ -69,7 +69,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Spectators:         Spectators.VisibleNever
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
-    for (i = 0; numBans / 2; 1) {
+    for (i = 0; (numBans * 2 + (losingTeam == null ? 0 : losingTeamBans)) / 4; 1) {
         CreateInWorldText(
             VisibleTo:      visibleIf(LocalPlayer().isInMenu),
             Header:         <"<0>  <1>  <2>  <3>",
@@ -169,5 +169,5 @@ String protectHeroString(Number n):
         HeroIconString(protectedHeroes[n]) : IconString(Icon.QuestionMark) + " " : "       ";
 
 String banHeroString(Number n):
-    Math.IsInRange(n, 0, numBans * 2 - 1) ? (n < CountOf(bannedHeroes)) ?
+    Math.IsInRange(n, 0, (numBans * 2 + (losingTeam == null ? 0 : losingTeamBans)) - 1) ? (n < CountOf(bannedHeroes)) ?
         HeroIconString(bannedHeroes[n]) : IconString(Icon.QuestionMark) + " " : "       ";

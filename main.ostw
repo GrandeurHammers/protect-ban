@@ -115,6 +115,14 @@ rule: "[GLOBAL SETUP] Global setup"
     }
     # Convert integer selection of Extras team to team constants
     losingTeam = [null, Team.Team1, Team.Team2][losingTeam];
+    # If all roles restricted for protect, clamp protect value
+    if (IsTrueForAll([maxTankProtects, maxDamageProtects, maxSupportProtects], ArrayElement() != -1)) {
+        numProtects = Min(numProtects * 2, maxTankProtects + maxDamageProtects + maxSupportProtects) / 2;
+    }
+    # If all roles restricted for ban, clamp ban value
+    if (IsTrueForAll([maxTankBans, maxDamageBans, maxSupportBans], ArrayElement() != -1)) {
+        numBans = Min(numBans * 2, maxTankBans + maxDamageBans + maxSupportBans) / 2;
+    }
 }
 
 rule: "[PLAYER SETUP] Force player out of initial hero select on spawn and handle conditional enable/disables"
@@ -211,10 +219,9 @@ void CleanupCurrentPhase() "[STATE MACHINE HELPER] clean up current phase"
     # Call individual phase hooks
     Skip(0);
     switch (currentPhase) {
-        case Phase.Waiting:
-            WaitPhaseCleanup();
+        case Phase.Protect:
+            ProtectPhaseCleanup();
             return;
-        // TODO: Add other phase cleanup routines
     }
 }
 
@@ -233,12 +240,16 @@ void ResetVotingPhase() "[SUB] Reset voting stage trackers" {
 
 void AdvanceStageSelection() "[SUB] Advancing stage streak logic + ending phase logic" {
     # Swap current voting team if current voting team streak has ended.
-    if (stageStreakRemaining == 0) {
+    if (stageStreakRemaining == 0 && currentPhase != Phase.ExtraBan) {
         currVotingTeam = OppositeTeamOf(currVotingTeam);
         stageStreakRemaining = Min(STREAK_LENGTH, stagesRemainingInPhase[TeamIndex(currVotingTeam)]);
     }
     # Check if current team is out of stages. If so, we know that the phase is over, since the current team can never have fewer stages left than the other team.
     if (stagesRemainingInPhase[TeamIndex(currVotingTeam)] == 0) {
+        endPhaseFlag = true;
+        return;
+    }
+    if (heroPool == EmptyArray()) {
         endPhaseFlag = true;
         return;
     }
@@ -278,8 +289,8 @@ void SelectedHeroAction() "[SUB] Take action for selected hero"
 
 rule: "[STAGE END HANDLER] When time runs out (or all players have voted), tally votes, announce result, and advance stage"
 if (isPhaseActive)
-# If time is up or every player has readied
-if (selectTimeRemaining == 0 || (progressWhenAllReady && IsTrueForAll(AllPlayers(currVotingTeam), ArrayElement().isReady)))
+# If time is up, there is no hero pool, or every player has readied
+if (selectTimeRemaining == 0 || (progressWhenAllReady && IsTrueForAll(AllPlayers(currVotingTeam), ArrayElement().isReady)) || heroPool == EmptyArray())
 {
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = 0;
@@ -307,6 +318,30 @@ if (endPhaseFlag)
     BigMessage(Header: <"<0> Phase Finished", PhaseName>);
     Wait(4);
     GoNextPhase();
+}
+
+rule: "[ROLE LIMIT HANDLER: TANK] If number of allowed tank picks is reached, remove tanks from selection pool"
+if (isPhaseActive)
+if (maxTankPicks != -1)
+if (tankPicks >= maxTankPicks)
+{
+    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, TankHeroes);
+}
+
+rule: "[ROLE LIMIT HANDLER: DAMAGE] If number of allowed tank picks is reached, remove tanks from selection pool"
+if (isPhaseActive)
+if (maxDamagePicks != -1)
+if (damagePicks >= maxDamagePicks)
+{
+    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, DamageHeroes);
+}
+
+rule: "[ROLE LIMIT HANDLER: TANK] If number of allowed tank picks is reached, remove tanks from selection pool"
+if (isPhaseActive)
+if (maxSupportPicks != -1)
+if (supportPicks >= maxSupportPicks)
+{
+    ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, SupportHeroes);
 }
 
 disabled rule: "====WAITING PHASE====" {}
@@ -360,9 +395,9 @@ if (IsTrueForAll(AllPlayers(), ArrayElement().isReady))
     GoNextPhase();
 }
 
-void WaitPhaseCleanup() "[PHASE: WAITING] clean up"
+void ProtectPhaseCleanup() "[PHASE: PROTECT] Refill hero pool for ban phases"
 {
-    # TODO: Any specific waiting phase cleanup
+    heroPool = RemoveFromArray(heroesSorted, Append(bannedHeroes, protectedHeroes));
 }
 
 disabled rule: "====PROTECT PHASE====" {}
@@ -387,8 +422,8 @@ void FinalCleanup() "[SUB] Perform cleanup of phase-agnostic elements"
 rule: "Prepare to enter normal gameplay"
 if (currentPhase == Phase.Gameplay)
 {
-    # Add protected heroes back to the hero pool
-    ModifyVariable(heroPool, Operation.AppendToArray, protectedHeroes);
+    # Reconstruct hero pool
+    heroPool = RemoveFromArray(heroesSorted, bannedHeroes);
     # Only allow the heroes in the pool
     SetAllowedHeroes(AllPlayers(), heroPool);
     # Clean up all texts and effects
