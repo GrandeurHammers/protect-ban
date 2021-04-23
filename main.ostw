@@ -294,15 +294,14 @@ if (selectTimeRemaining == 0 || (progressWhenAllReady && IsTrueForAll(AllPlayers
 {
     StopChasingVariable(selectTimeRemaining);
     selectTimeRemaining = 0;
-    BigMessage(Header: "Tallying Votes...");
     TallyVotes();
-    Wait(3);
-    BigMessage(AllPlayers(), <"<0>: <1>", PhaseName, HeroIconString(selectedHero)>);
+    BigMessage(AllPlayers(), <"<2> <0>: <1>", PhaseName, HeroIconString(selectedHero), currVotingTeam>);
     SelectedHeroAction();
+    Wait(0.25);
     AdvanceStageSelection();
     # If the phase is over after advancing to next stage, don't start a new stage.
     AbortIf(endPhaseFlag);
-    Wait(4);
+    Wait(3.75);
     StartVotingStage();
     LoopIfConditionIsTrue();
 }
@@ -314,7 +313,7 @@ if (endPhaseFlag)
     isPhaseActive = false;
     endPhaseFlag = false;
     # Wait to let previous Big Message finish
-    Wait(3);
+    Wait(2.75);
     BigMessage(Header: <"<0> Phase Finished", PhaseName>);
     Wait(4);
     GoNextPhase();
