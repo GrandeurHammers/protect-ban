@@ -140,7 +140,7 @@ if (IsWaitingForPlayers())
     DisableMovementCollisionWithPlayers();
 
     while(!HasSpawned(EventPlayer())) {
-        ForcePlayerHero(EventPlayer(), RandomValueInArray(AllHeroes()));
+        ForcePlayerHero(EventPlayer(), Hero.Zenyatta);
         Wait(1);
         StopForcingHero(EventPlayer());
         Wait(0.25);
