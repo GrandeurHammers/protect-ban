@@ -13,7 +13,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         VisibleTo:          visibleIf(selectTimeRemaining > 0),
         Value:              selectTimeRemaining / timePerPhase * 100,
         Text:               <"<0> <1>", currVotingTeam, PhaseName>,
-        Position:           OnScreenText.WorldRender(camPos, camFacing, 0, 1.3),
+        Position:           screenPos(0, 1.3),
         Scale:              1.5,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       ProgressBarEvaluation.VisibleToAndValues,
@@ -22,7 +22,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
     CreateInWorldText(
         VisibleTo:          visibleIf(selectTimeRemaining > 0),
         Header:             RoundToInteger(selectTimeRemaining, Rounding.Up),
-        Position:           OnScreenText.WorldRender(camPos, camFacing, 0, 1),
+        Position:           screenPos(0, 1),
         Scale:              4,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
@@ -62,7 +62,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
     CreateInWorldText(
         VisibleTo:          AllPlayers(),
         Header:             @"Banned Heroes",
-        Position:           OnScreenText.WorldRender(camPos, camFacing, 2.5, 1.5),
+        Position:           screenPos(2.5, 1.5),
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleTo,

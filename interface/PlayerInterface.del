@@ -244,7 +244,7 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
                                 hoveredButton == null || selectTimeRemaining == 0 ? 
-                                    CustomColor(0,0,0,0) :
+                                    null :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
                                         Color.Green :
@@ -262,7 +262,7 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
                                 hoveredButton == null || selectTimeRemaining == 0 ? 
-                                    CustomColor(0,0,0,0) :
+                                    null :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
                                         Color.Green :
@@ -280,7 +280,7 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
                                 hoveredButton == null || selectTimeRemaining == 0 ? 
-                                    CustomColor(0,0,0,0) :
+                                    null :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
                                         Color.Green :
@@ -298,7 +298,7 @@ void makeCursor()
         Reevaluation:       InworldTextRev.VisibleToPositionAndColor,
         TextColor:          UpdateEveryFrame(
                                 hoveredButton == null || selectTimeRemaining == 0 ? 
-                                    CustomColor(0,0,0,0) :
+                                    null :
                                     ArrayContains(heroPool, hoveredButton.clickID) ?
                                         ArrayContains(selectionList, hoveredButton.clickID) ? Color.Red :
                                         Color.Green :
