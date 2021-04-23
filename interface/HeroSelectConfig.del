@@ -14,39 +14,14 @@ Number readyBtnHeight: 0.3;
 
 // Workshop settings
 
-globalvar Boolean liteMode = 1 == WorkshopSettingCombo(
-    category:       "Hero Select Anywhere",
-    name:           "Lightweight mode",
-    default:        0,
-    options:        ["Off", "On (overrides other text settings)"],
-    sortOrder:      0
-);
-Boolean heroDisplay: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
-    Name:           "Hero display (1 text)",
-    Default:        true,
-    SortOrder:      2
-);
-Boolean roleHeaders: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
-    Name:           "Role headers (3 texts)",
-    Default:        true,
-    SortOrder:      3
-);
-Boolean roleDividers: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
-    Name:           "Role dividers (4 texts)",
-    Default:        true,
-    SortOrder:      4
-);
 Boolean cursorBox: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
+    Category:       "Interface",
     Name:           "Highlight hovered hero (4 texts)",
     Default:        true,
     SortOrder:      5
 );
 Boolean selectedBox: WorkshopSettingToggle(
-    Category:       "Hero Select Anywhere",
+    Category:       "Interface",
     Name:           "Highlight selected hero (4 texts)",
     Default:        true,
     SortOrder:      6
