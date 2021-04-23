@@ -2,7 +2,6 @@ import "../main.ostw";
 import "HeroSelectConfig.del";
 import "../OSTWUtils/OnScreenText.del";
 import "../OSTWUtils/Cursor.del";
-import "../OSTWUtils/StringSorting.del";
 
 /*
 import "../OSTWUtils/Diagnostics.del";
@@ -102,12 +101,13 @@ void setupHeroArrays() "[HeroSelectAnywhere.del] (Subroutine) Define hero arrays
 rule: "[HeroSelectAnywhere.del] Main setup"
 {
     setupHeroArrays();
-    DisableInspectorRecording();
+    /* DisableInspectorRecording();
     heroesSorted += sortAlphabetically(TankHeroes);
     heroesSorted += sortAlphabetically(DamageHeroes);
     heroesSorted += sortAlphabetically(SupportHeroes);
-    if (inspectorEnabled) EnableInspectorRecording();
-    MinWait();
+    if (inspectorEnabled) EnableInspectorRecording(); */
+    heroesSorted = [Hero.Dva,Hero.Orisa,Hero.Reinhardt,Hero.Roadhog,Hero.Sigma,Hero.WreckingBall,Hero.Winston,Hero.Zarya,Hero.Ashe,Hero.Bastion,Hero.Doomfist,Hero.Echo,Hero.Genji,Hero.Hanzo,Hero.Junkrat,Hero.Mei,Hero.Mccree,Hero.Pharah,Hero.Reaper,Hero.Soldier76,Hero.Symmetra,Hero.Sombra,Hero.Tracer,Hero.Torbjorn,Hero.Widowmaker,Hero.Ana,Hero.Brigitte,Hero.Baptiste,Hero.Lucio,Hero.Moira,Hero.Mercy,Hero.Zenyatta];
+    // MinWait();
     CreateEffect(
         VisibleTo:      LocalPlayer(),
         Type:           Effect.Orb,
