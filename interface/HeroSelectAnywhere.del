@@ -37,6 +37,29 @@ if (isInMenu)
     MinWait();
     cursor = new Cursor(-3.75, 3.75, -2, 2);
 }
+
+rule: "[HeroSelectAnywhere.del] Lower sens"
+Event.OngoingPlayer
+if (isInMenu)
+if (IsButtonHeld(Button: Button.Ability1))
+if (!IsButtonHeld(Button: Button.Ability2))
+{
+    cursor.updateAimSpeed(cursor.getAimSpeed() - 0.1);
+    Wait(0.05, WaitBehavior.AbortWhenFalse);
+    LoopIfConditionIsTrue();
+}
+
+rule: "[HeroSelectAnywhere.del] Raise sens"
+Event.OngoingPlayer
+if (isInMenu)
+if (IsButtonHeld(Button: Button.Ability2))
+if (!IsButtonHeld(Button: Button.Ability1))
+{
+    cursor.updateAimSpeed(cursor.getAimSpeed() + 0.1);
+    Wait(0.05, WaitBehavior.AbortWhenFalse);
+    LoopIfConditionIsTrue();
+}
+
 rule: "[HeroSelectAnywhere.del] Close hero select"
 Event.OngoingPlayer
 if (cursor != null)
