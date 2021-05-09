@@ -1,17 +1,12 @@
 import "main.ostw";
 
-rule: "[DEBUG] Show some HUDs and stuff" 
+disabled rule: "[DEBUG] Show some HUDs and stuff"
 {
     CreateHudText(
         VisibleTo: AllPlayers(),
         Header: <"Phase <0>", PhaseName>,
         Location: Location.Left,
         Reevaluation: HudTextRev.VisibleToAndString
-    );
-    CreateHudText(
-        VisibleTo: LocalPlayer() != null ? LocalPlayer() : null,
-        Header: <"Selected Heroes: <0> <1>", LocalPlayer().selectionList[0], LocalPlayer().selectionList[1]>,
-        SortOrder: 2
     );
     CreateProgressBarHudText(
         VisibleTo:      selectTimeRemaining > 0 ? AllPlayers() : null,
@@ -23,18 +18,16 @@ rule: "[DEBUG] Show some HUDs and stuff"
     );
 }
 
-rule: "[DEBUG] Create temporary hero pool"
+disabled rule: "[DEBUG] Create temporary hero pool"
 {
     heroPool = AllHeroes();
 }
 
-rule: "[DEBUG] On Interact, add/remove current hero to selected heroes"
-Event.OngoingPlayer
-if (IsButtonHeld(Button: Button.Interact))
+rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"
+if (IsAssemblingHeroes())
 {
-    if (ArrayContains(selectionList, HeroOf())) {
-        ModifyVariable(selectionList, Operation.RemoveFromArrayByValue, HeroOf());
-        return;
-    }
-    ModifyVariable(selectionList, Operation.AppendToArray, HeroOf());
+    Wait(5);
+    LogToInspector(
+        <"Text: <0> | Eff: <1>", TextCount(), EntityCount()>
+    );
 }
