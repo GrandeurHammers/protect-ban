@@ -432,6 +432,6 @@ if (currentPhase == Phase.Gameplay)
     destroyMenu();
 }
 
-import "interface/HeroSelectAnywhere.del";
+import "interface/HeroSelect.del";
 import "coreDebug.ostw";
 import "interface/miscSetup.del";
