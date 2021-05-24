@@ -168,7 +168,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
             TextColor:      Color.White,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     }
@@ -196,7 +196,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -207,7 +207,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -218,7 +218,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -229,7 +229,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -240,7 +240,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -251,7 +251,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     CreateInWorldText(
@@ -262,7 +262,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
         TextColor:      Color.White,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleTo,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     if (cursorBox) {

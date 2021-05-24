@@ -10,23 +10,23 @@ rule: "[miscSetup.del] Create additional on-screen elements"
 {
     # Center elements
     CreateProgressBarInWorldText(
-        VisibleTo:          visibleIf(selectTimeRemaining > 0),
+        VisibleTo:          globalVisibleIf(selectTimeRemaining > 0),
         Value:              selectTimeRemaining / timePerPhase * 100,
         Text:               <"<0> <1>", currVotingTeam, PhaseName>,
         Position:           screenPos(0, 1.3),
         Scale:              1.5,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       ProgressBarEvaluation.VisibleToAndValues,
-        NonteamSpectators:  Spectators.VisibleNever       
+        NonteamSpectators:  Spectators.DefaultVisibility
     );
     CreateInWorldText(
-        VisibleTo:          visibleIf(selectTimeRemaining > 0),
+        VisibleTo:          globalVisibleIf(selectTimeRemaining > 0),
         Header:             RoundToInteger(selectTimeRemaining, Rounding.Up),
         Position:           screenPos(0, 1),
         Scale:              4,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleToAndString,
-        Spectators:         Spectators.VisibleNever
+        Spectators:         Spectators.DefaultVisibility
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     # Left-side elements
@@ -38,7 +38,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:              3,
             Clipping:           Clipping.DoNotClip,
             Reevaluation:       InworldTextRev.VisibleTo,
-            Spectators:         Spectators.VisibleNever
+            Spectators:         Spectators.VisibleAlways
         );
     }
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
@@ -67,7 +67,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
@@ -79,7 +79,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Scale:              3,
         Clipping:           Clipping.DoNotClip,
         Reevaluation:       InworldTextRev.VisibleTo,
-        Spectators:         Spectators.VisibleNever
+        Spectators:         Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     // for (i = 0; (numBans * 2 + (losingTeam == null ? 0 : losingTeamBans)) / 4; 1) {
@@ -107,7 +107,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
@@ -161,7 +161,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxTankPicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleToStringAndColor,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     # Damage role limit indicator
@@ -173,7 +173,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxDamagePicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleToStringAndColor,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     # Support role limit indicator
@@ -185,7 +185,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxSupportPicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
         Reevaluation:   InworldTextRev.VisibleToStringAndColor,
-        Spectators:     Spectators.VisibleNever
+        Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
 }
