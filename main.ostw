@@ -433,5 +433,5 @@ if (currentPhase == Phase.Gameplay)
 }
 
 import "interface/HeroSelect.del";
-import "coreDebug.ostw";
+// import "coreDebug.ostw";
 import "interface/miscSetup.del";
