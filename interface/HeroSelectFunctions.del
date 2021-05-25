@@ -1,8 +1,8 @@
 import "HeroSelect.del";
 
 globalvar Vector screenOrigin = camPos + 300*camFacing;
-globalvar Vector screenXAxis = DirectionFromAngles(HorizontalAngleFromDirection(camFacing), VerticalAngleFromDirection(camFacing) - 90);
-globalvar Vector screenYAxis = CrossProduct(camFacing, screenXAxis);
+globalvar Vector screenYAxis = DirectionFromAngles(HorizontalAngleFromDirection(camFacing), VerticalAngleFromDirection(camFacing) - 90);
+globalvar Vector screenXAxis = CrossProduct(camFacing, screenYAxis);
 Vector screenPos(Number x, Number y): 
     UpdateEveryFrame(screenOrigin + 100 * (x * screenXAxis + y * screenYAxis));
     //UpdateEveryFrame(OnScreenText.WorldRender(camPos, camFacing, x, y));
