@@ -363,20 +363,6 @@ if (currentPhase == Phase.Waiting)
         Spectators:         Spectators.VisibleNever
     );
     ModifyVariable(phaseIWText, Operation.AppendToArray, LastTextID());
-    CreateHudText(
-        VisibleTo: null,
-        Header: <"<0>/<1> <2> <3>",
-            CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)),
-            NumberOfPlayers(),
-            @"Players",
-            @"Ready"
-        >,
-        Location: Location.Top,
-        SortOrder: 1,
-        HeaderColor: Color.Yellow,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(phaseHudText, Operation.AppendToArray, LastTextID());
 }
 
 rule: "[PHASE: WAITING] Start mode"
