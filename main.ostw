@@ -327,7 +327,7 @@ if (tankPicks >= maxTankPicks)
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, TankHeroes);
 }
 
-rule: "[ROLE LIMIT HANDLER: DAMAGE] If number of allowed tank picks is reached, remove tanks from selection pool"
+rule: "[ROLE LIMIT HANDLER: DAMAGE] If number of allowed damage picks is reached, remove damage heroes from selection pool"
 if (isPhaseActive)
 if (maxDamagePicks != -1)
 if (damagePicks >= maxDamagePicks)
@@ -335,7 +335,7 @@ if (damagePicks >= maxDamagePicks)
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, DamageHeroes);
 }
 
-rule: "[ROLE LIMIT HANDLER: TANK] If number of allowed tank picks is reached, remove tanks from selection pool"
+rule: "[ROLE LIMIT HANDLER: SUPPORT] If number of allowed support picks is reached, remove supports from selection pool"
 if (isPhaseActive)
 if (maxSupportPicks != -1)
 if (supportPicks >= maxSupportPicks)
