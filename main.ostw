@@ -356,11 +356,11 @@ if (currentPhase == Phase.Waiting)
                                 @"Players",
                                 @"Ready"
                             >,
-        Position:           screenPos(0, 1.3),
+        Position:           screenPos(0, -0.5),
         Clipping:           Clipping.DoNotClip,
         Scale:              3,
         Reevaluation:       InworldTextRev.VisibleToPositionAndString,
-        Spectators:         Spectators.VisibleNever
+        Spectators:         Spectators.VisibleAlways
     );
     ModifyVariable(phaseIWText, Operation.AppendToArray, LastTextID());
 }
