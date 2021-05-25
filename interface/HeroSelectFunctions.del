@@ -37,6 +37,8 @@ Boolean shouldAllowSelection(Player p = LocalPlayer()):
 
 Player visibleIf(Boolean condition): 
     condition ? LocalPlayer() : null;
+Player[] globalVisibleIf(Boolean condition):
+    condition ? AllPlayers() : null;
 String heroString(Number n): 
     Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroSelectable(heroesSorted[n], LocalPlayer()) ?
         HeroIconString(heroesSorted[n]) : unselectableHeroString(n) : "      ";

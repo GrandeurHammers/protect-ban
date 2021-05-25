@@ -1,6 +1,10 @@
 import "customGameSettings.lobby";
 import "Credits.ostw";
 
+globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Selection", 20, 5, 120, 9.9);
+globalvar Number progressWhenAllReady = WorkshopSettingToggle("General", "Skip Timer When All Players Are Ready", true, 100);
+globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
+globalvar Boolean[] showBans = [WorkshopSettingToggle("General", "Show Banned Heroes To Players", false, 102), WorkshopSettingToggle("General", "Show Banned Heroes", true, 101)];
 globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects Per Team", 1, 0, 15, 2);
 globalvar Number maxTankProtects = WorkshopSettingInteger("Protect", "Max Tank Protects (-1 for No Limit)", 2, -1, 4, 3);
 globalvar Number maxDamageProtects = WorkshopSettingInteger("Protect", "Max Damage Protects (-1 for No Limit)", 2, -1, 8, 4);
@@ -11,9 +15,6 @@ globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1,
 globalvar Number maxTankBans = WorkshopSettingInteger("Ban", "Max Tank Bans (-1 for No Limit)", 2, -1, 8, 12);
 globalvar Number maxDamageBans = WorkshopSettingInteger("Ban", "Max Damage Bans (-1 for No Limit)", 4, -1, 8, 13);
 globalvar Number maxSupportBans = WorkshopSettingInteger("Ban", "Max Support Bans (-1 for No Limit)", 2, -1, 8, 14);
-globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Selection", 20, 5, 120, 9.9);
-globalvar Number progressWhenAllReady = WorkshopSettingToggle("General", "Skip Timer When All Players Are Ready", true, 100);
-globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
 // END CUSTOMIZATION
 globalvar Hero[] protectedHeroes = [];
 globalvar Hero[] bannedHeroes = [];
@@ -327,7 +328,7 @@ if (tankPicks >= maxTankPicks)
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, TankHeroes);
 }
 
-rule: "[ROLE LIMIT HANDLER: DAMAGE] If number of allowed tank picks is reached, remove tanks from selection pool"
+rule: "[ROLE LIMIT HANDLER: DAMAGE] If number of allowed damage picks is reached, remove damage heroes from selection pool"
 if (isPhaseActive)
 if (maxDamagePicks != -1)
 if (damagePicks >= maxDamagePicks)
@@ -335,7 +336,7 @@ if (damagePicks >= maxDamagePicks)
     ModifyVariable(heroPool, Operation.RemoveFromArrayByValue, DamageHeroes);
 }
 
-rule: "[ROLE LIMIT HANDLER: TANK] If number of allowed tank picks is reached, remove tanks from selection pool"
+rule: "[ROLE LIMIT HANDLER: SUPPORT] If number of allowed support picks is reached, remove supports from selection pool"
 if (isPhaseActive)
 if (maxSupportPicks != -1)
 if (supportPicks >= maxSupportPicks)
@@ -356,27 +357,13 @@ if (currentPhase == Phase.Waiting)
                                 @"Players",
                                 @"Ready"
                             >,
-        Position:           screenPos(0, 1.3),
+        Position:           screenPos(0, -0.5),
         Clipping:           Clipping.DoNotClip,
         Scale:              3,
         Reevaluation:       InworldTextRev.VisibleToPositionAndString,
-        Spectators:         Spectators.VisibleNever
+        Spectators:         Spectators.VisibleAlways
     );
     ModifyVariable(phaseIWText, Operation.AppendToArray, LastTextID());
-    CreateHudText(
-        VisibleTo: null,
-        Header: <"<0>/<1> <2> <3>",
-            CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)),
-            NumberOfPlayers(),
-            @"Players",
-            @"Ready"
-        >,
-        Location: Location.Top,
-        SortOrder: 1,
-        HeaderColor: Color.Yellow,
-        Spectators: Spectators.VisibleAlways
-    );
-    ModifyVariable(phaseHudText, Operation.AppendToArray, LastTextID());
 }
 
 rule: "[PHASE: WAITING] Start mode"
@@ -428,10 +415,47 @@ if (currentPhase == Phase.Gameplay)
     # Clean up all texts and effects
     FinalCleanup();
     StartGameMode();
-    Wait(2);
+    Wait(0.25);
     destroyMenu();
+    # Create a HUD showing banned heroes if requested
+    if (showBans[1]) {
+        CreateHudText(
+            VisibleTo:          showBans[0] ? AllPlayers() : null,
+            Subheader:          <@"Banned Heroes">,
+            Location:           Location.Left,
+            SortOrder:          1,
+            SubheaderColor:     Color.Red,
+            Reevaluation:       HudTextRev.VisibleTo,
+            Spectators:         Spectators.VisibleAlways
+        );
+        // for (i = 0; CountOf(bannedHeroes) / 4; 1) {
+        //     CreateHudText(
+        //         VisibleTo:      AllPlayers(),
+        //         Subheader:      <"<0> <1> <2> <3>",
+        //             HeroIconString(bannedHeroes[4 * i + 0]),
+        //             HeroIconString(bannedHeroes[4 * i + 1]),
+        //             HeroIconString(bannedHeroes[4 * i + 2]),
+        //             HeroIconString(bannedHeroes[4 * i + 3])>,
+        //         Location:       Location.Left,
+        //         SortOrder:      i+2,
+        //         Reevaluation:   HudTextRev.VisibleTo,
+        //         Spectators:     Spectators.VisibleAlways
+        //     );
+        // }
+        for (i = 0; CountOf(bannedHeroes); 1) {
+            CreateHudText(
+                VisibleTo:      showBans[0] ? AllPlayers() : null,
+                Subheader:      <"<0>",
+                    HeroIconString(bannedHeroes[i])>,
+                Location:       Location.Left,
+                SortOrder:      i+2,
+                Reevaluation:   HudTextRev.VisibleTo,
+                Spectators:     Spectators.VisibleAlways
+            );
+        }
+    }
 }
 
 import "interface/HeroSelect.del";
-import "coreDebug.ostw";
+// import "coreDebug.ostw";
 import "interface/miscSetup.del";
