@@ -4,7 +4,7 @@ import "Credits.ostw";
 globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Selection", 20, 5, 120, 9.9);
 globalvar Number progressWhenAllReady = WorkshopSettingToggle("General", "Skip Timer When All Players Are Ready", true, 100);
 globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
-globalvar Boolean[] showBans = [WorkshopSettingToggle("General", "Show Banned Heroes To Players", false), WorkshopSettingToggle("General", "Show Banned Heroes", true)];
+globalvar Boolean[] showBans = [WorkshopSettingToggle("General", "Show Banned Heroes To Players", false, 102), WorkshopSettingToggle("General", "Show Banned Heroes", true, 101)];
 globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects Per Team", 1, 0, 15, 2);
 globalvar Number maxTankProtects = WorkshopSettingInteger("Protect", "Max Tank Protects (-1 for No Limit)", 2, -1, 4, 3);
 globalvar Number maxDamageProtects = WorkshopSettingInteger("Protect", "Max Damage Protects (-1 for No Limit)", 2, -1, 8, 4);
