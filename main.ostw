@@ -4,6 +4,7 @@ import "Credits.ostw";
 globalvar Number timePerPhase = WorkshopSettingInteger("General", "Time Limit Per Selection", 20, 5, 120, 9.9);
 globalvar Number progressWhenAllReady = WorkshopSettingToggle("General", "Skip Timer When All Players Are Ready", true, 100);
 globalvar Team firstPickTeam = [RandomValueInArray([Team.Team1, Team.Team2]), Team.All, Team.Team1, Team.Team2][WorkshopSettingCombo("General", "First Pick Team", 0, ["Random (Once)", "Random (Every Phase)", "Team 1", "Team 2"], 0)];
+globalvar Boolean[] showBans = [WorkshopSettingToggle("General", "Show Banned Heroes To Players", false), WorkshopSettingToggle("General", "Show Banned Heroes", true)];
 globalvar Number numProtects = WorkshopSettingInteger("Protect", "Hero Protects Per Team", 1, 0, 15, 2);
 globalvar Number maxTankProtects = WorkshopSettingInteger("Protect", "Max Tank Protects (-1 for No Limit)", 2, -1, 4, 3);
 globalvar Number maxDamageProtects = WorkshopSettingInteger("Protect", "Max Damage Protects (-1 for No Limit)", 2, -1, 8, 4);
@@ -414,8 +415,45 @@ if (currentPhase == Phase.Gameplay)
     # Clean up all texts and effects
     FinalCleanup();
     StartGameMode();
-    Wait(2);
+    Wait(0.25);
     destroyMenu();
+    # Create a HUD showing banned heroes if requested
+    if (showBans[1]) {
+        CreateHudText(
+            VisibleTo:          showBans[0] ? AllPlayers() : null,
+            Subheader:          <@"Banned Heroes">,
+            Location:           Location.Left,
+            SortOrder:          1,
+            SubheaderColor:     Color.Red,
+            Reevaluation:       HudTextRev.VisibleTo,
+            Spectators:         Spectators.VisibleAlways
+        );
+        // for (i = 0; CountOf(bannedHeroes) / 4; 1) {
+        //     CreateHudText(
+        //         VisibleTo:      AllPlayers(),
+        //         Subheader:      <"<0> <1> <2> <3>",
+        //             HeroIconString(bannedHeroes[4 * i + 0]),
+        //             HeroIconString(bannedHeroes[4 * i + 1]),
+        //             HeroIconString(bannedHeroes[4 * i + 2]),
+        //             HeroIconString(bannedHeroes[4 * i + 3])>,
+        //         Location:       Location.Left,
+        //         SortOrder:      i+2,
+        //         Reevaluation:   HudTextRev.VisibleTo,
+        //         Spectators:     Spectators.VisibleAlways
+        //     );
+        // }
+        for (i = 0; CountOf(bannedHeroes); 1) {
+            CreateHudText(
+                VisibleTo:      showBans[0] ? AllPlayers() : null,
+                Subheader:      <"<0>",
+                    HeroIconString(bannedHeroes[i])>,
+                Location:       Location.Left,
+                SortOrder:      i+2,
+                Reevaluation:   HudTextRev.VisibleTo,
+                Spectators:     Spectators.VisibleAlways
+            );
+        }
+    }
 }
 
 import "interface/HeroSelect.del";
