@@ -18,16 +18,20 @@ disabled rule: "[DEBUG] Show some HUDs and stuff"
     );
 }
 
-disabled rule: "[DEBUG] Create temporary hero pool"
-{
-    heroPool = AllHeroes();
-}
-
-rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"
+disabled rule: "[DEBUG] Show amount of texts and effects remaining after Assemble Heroes"
 if (IsAssemblingHeroes())
 {
     Wait(5);
     LogToInspector(
         <"Text: <0> | Eff: <1>", TextCount(), EntityCount()>
     );
+}
+
+rule: "[DEBUG] Summon dummy bot"
+if (IsWaitingForPlayers())
+{
+    Wait(3);
+    CreateDummyBot(Hero.Zenyatta, Team.Team1, -1, camPos, camFacing);
+    Wait(5);
+    AllPlayers().isReady = true;
 }
