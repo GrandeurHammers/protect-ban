@@ -1,1 +1,1 @@
-# pick-ban
+# protect-ban
