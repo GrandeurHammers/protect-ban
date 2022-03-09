@@ -3,7 +3,7 @@ import "HeroSelect.del";
 globalvar Vector screenOrigin = camPos + 300*camFacing;
 globalvar Vector screenYAxis = DirectionFromAngles(HorizontalAngleFromDirection(camFacing), VerticalAngleFromDirection(camFacing) - 90);
 globalvar Vector screenXAxis = CrossProduct(camFacing, screenYAxis);
-Vector screenPos(Number x, Number y): 
+Vector screenPos(Number x, Number y):
     UpdateEveryFrame(screenOrigin + 100 * (x * screenXAxis + y * screenYAxis));
     //UpdateEveryFrame(OnScreenText.WorldRender(camPos, camFacing, x, y));
 void createSelectionBox(
@@ -35,11 +35,11 @@ void createSelectionBox(
 Boolean shouldAllowSelection(Player p = LocalPlayer()):
     (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay) && currVotingTeam == TeamOf(p) && selectTimeRemaining > 0;
 
-Player visibleIf(Boolean condition): 
+Player visibleIf(Boolean condition):
     condition ? LocalPlayer() : null;
 Player[] globalVisibleIf(Boolean condition):
     condition ? AllPlayers() : null;
-String heroString(Number n): 
+String heroString(Number n):
     Math.IsInRange(n, 0, CountOf(heroesSorted) - 1) ? isHeroSelectable(heroesSorted[n], LocalPlayer()) ?
         HeroIconString(heroesSorted[n]) : unselectableHeroString(n) : "      ";
 String unselectableHeroString(Number n):
@@ -51,7 +51,7 @@ Number heroX(Number n):
     rowWidth / -2 + (rowWidth / CountOf(heroesSorted)) * (n + 0.5);
 Number cursorHeroIndex(Number x):
     Math.Floor((x / iconBorderOffset + CountOf(heroesSorted)) / 2);
-Boolean isHeroSelectable(Hero h, Player p = EventPlayer()): 
+Boolean isHeroSelectable(Hero h, Player p = EventPlayer()):
     ArrayContains(heroPool, h);
 Number iconBorderOffset: rowWidth / CountOf(heroesSorted) / 2;
 Boolean cursorInHeroArea(Player p = EventPlayer()):

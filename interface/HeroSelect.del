@@ -7,7 +7,7 @@ import "../OSTWUtils/Cursor.del";
 /*
 import "../OSTWUtils/Diagnostics.del";
 globalvar Diagnostics disp! = new Diagnostics(
-    ShowServerLoadAverage:  true, 
+    ShowServerLoadAverage:  true,
     ShowServerLoadPeak:     true,
     ShowTextCount:          true,
     ShowEntityCount:        true
@@ -32,8 +32,8 @@ if (isInMenu)
         EyePosition:    camPos,
         LookAtPosition: camPos + camFacing,
     );
-    selectionIndex = HeroOf() == null ? 
-        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) : 
+    selectionIndex = HeroOf() == null ?
+        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) :
         IndexOfArrayValue(heroesSorted, HeroOf());
     MinWait();
     cursor = new Cursor(-3.75, 3.75, -2, 2);
