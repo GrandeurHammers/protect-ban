@@ -16,7 +16,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Position:           screenPos(0, 1),
         Scale:              1.5,
         Clipping:           Clipping.DoNotClip,
-        Reevaluation:       ProgressBarEvaluation.VisibleToAndValues,
+        Reevaluation:       ProgressBarWorldEvaluation.VisibleToAndValues,
         NonteamSpectators:  Spectators.DefaultVisibility
     );
     CreateInWorldText(

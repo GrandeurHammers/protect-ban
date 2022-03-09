@@ -18,7 +18,7 @@ globalvar Number backdropEffect;
 globalvar Number[] textEntities = [];
 
 playervar Boolean isInMenu = false;
-playervar Cursor cursor;
+playervar Cursor | Number cursor = -1;
 playervar Number selectionIndex = -1;
 rule: "▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒【Hero Select by Josbird】▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒" {}
 rule: "[HeroSelectAnywhere.del] Open hero select"
@@ -63,7 +63,7 @@ if (!IsButtonHeld(Button: Button.Ability1))
 
 rule: "[HeroSelectAnywhere.del] Close hero select"
 Event.OngoingPlayer
-if (cursor != null)
+if (cursor != -1)
 if (!isInMenu)
 {
     EnableHeroHud(EventPlayer());
@@ -319,7 +319,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
     ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
 
     CreateInWorldText(
-        VisibleTo:      visibleIf(LocalPlayer().cursor != null),
+        VisibleTo:      visibleIf(LocalPlayer().cursor != -1),
         Header:         "▲",
         Position:       screenPos(LocalPlayer().cursor.getX(), LocalPlayer().cursor.getY()),
         Scale:          3.5,
