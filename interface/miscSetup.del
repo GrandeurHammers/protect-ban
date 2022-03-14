@@ -54,10 +54,23 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleAlways
+            Spectators:     Spectators.VisibleNever
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
+    // for (i = 0; numProtects * 2; 1) {
+    //     CreateInWorldText(
+    //         VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+    //         Header:         <"<0>",
+    //             protectHeroString(EvaluateOnce(i))>,
+    //         Position:       screenPos(-3.25 + (i % 4) * 0.5, 0.85 - 0.3 * RoundToInteger(i / 4, Rounding.Down)),
+    //         Scale:          3,
+    //         Clipping:       Clipping.DoNotClip,
+    //         Reevaluation:   InworldTextRev.VisibleToAndString,
+    //         Spectators:     Spectators.VisibleAlways
+    //     );
+    //     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    // }
     # Right-side elements
     CreateInWorldText(
         VisibleTo:          AllPlayers(),
@@ -81,10 +94,23 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleAlways
+            Spectators:     Spectators.VisibleNever
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
+    // for (i = 0; (numBans * 2 + (losingTeam == null ? 0 : losingTeamBans)); 1) {
+    //     CreateInWorldText(
+    //         VisibleTo:      visibleIf(LocalPlayer().isInMenu),
+    //         Header:         <"<0>",
+    //             banHeroString(EvaluateOnce(i))>,
+    //         Position:       screenPos(1.75 + 0.5 * (i % 4), 0.85 - 0.3 * RoundToInteger(i / 4, Rounding.Down)),
+    //         Scale:          3,
+    //         Clipping:       Clipping.DoNotClip,
+    //         Reevaluation:   InworldTextRev.VisibleToAndString,
+    //         Spectators:     Spectators.VisibleAlways
+    //     );
+    //     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
+    // }
     # Sens elements
     CreateInWorldText(
         VisibleTo:          visibleIf(LocalPlayer().isInMenu),

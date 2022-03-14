@@ -1,3 +1,4 @@
+import "HeroSelectConfig.del";
 import "HeroSelect.del";
 
 globalvar Vector screenOrigin = camPos + 300*camFacing;
