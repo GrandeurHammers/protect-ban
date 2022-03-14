@@ -1,0 +1,34 @@
+<style>
+	h2 .headerlink {
+		font-size: 0.5em;
+		opacity: 0;
+	}
+
+	h2:hover .headerlink, h3:hover .headerlink {
+		opacity: 1;
+	}
+</style>
+> Ever wondered what a protect/pick and ban system to Overwatch would be like? Wonder no longer! Inspired by systems in games such as League of Legends, this mode allows teams to protect and ban heroes before playing a normal game of competitive Overwatch.
+
+<h2 id="hall-of-fame">Hall Of Fame<a href="#hall-of-fame" class="headerlink" style="font-size: 0.5em">🔗</a></h2>
+Featured in:
+- SVB's Creator PUGs ([SVB](https://twitch.tv/owsvb))
+- Console Gaming League's Hero Bans tournament ([CGL](https://www.twitch.tv/cgl1))
+
+If you have organized an event and want to be featured here, let me know in the comments!
+
+<h2 id="overview">Overview<a href="#overview" class="headerlink" style="font-size: 0.5em">🔗</a></h2>
+
+Upon starting the match, players will be given an opportunity to adjust their cursor sensitivity before readying up. Once enough players have readied up, the **Protect Phase** will begin.
+
+During the **==Protect Phase==**, teams will be able to prevent heroes from being banned. Selection will happen one hero at a time, with selection snaking between teams. By default, the first team to pick a protect will be selected at random. Once a protection is made by the first team, the opposing team will get two protects in a row, before selection is handed back to the first team for two more selections. Teams continue alternating protecting two heroes in a row until the requisite number of heroes are protected, at which point the **Ban Phase** will begin.
+
+As the name implies, the **==Ban Phase==** allows teams to choose heroes to ban from play for the upcoming match. By default, the team which got first pick during the **Protect Phase** will get to pick the first ban. Selection snakes as during the **Protect Phase**, and no protected heroes may be chosen to be banned. An **==Extra Bans Phase==** may be enabled (off by default) to give a single team a final set of extra bans.
+
+Once banning is complete, the menu will self-destruct and a normal match of competitive Overwatch will begin. Banned heroes are shown to spectators only by default, but players can be allowed to view the banned heroes as well through the Workshop Settings.
+
+<h2 id="notes">Notes<a href="#notes" class="headerlink" style="font-size: 0.5em">🔗</a></h2>
+
+- Role limits take precedence over protects per team. In other words, if the role limits in total add up to less than 2 times the number of selections per team, the number of selections will be limited to the sum of all the role limits. For example, if the ban phase is limited to 2 tanks, 4 damage heroes, and 2 supports, for 8 total, but the bans per team is set to 5, only 8 bans will occur as opposed to the configured 10.
+- If more bans are configured through either the role limits or the bans per team than are possible due to the number of protected heroes, the ban phase will terminate early.
+
