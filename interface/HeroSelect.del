@@ -32,9 +32,7 @@ if (isInMenu)
         EyePosition:    camPos,
         LookAtPosition: camPos + camFacing,
     );
-    selectionIndex = HeroOf() == null ?
-        RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement()))) :
-        IndexOfArrayValue(heroesSorted, HeroOf());
+    selectionIndex = RandomValueInArray(MappedArray(AllowedHeroes(EventPlayer()), isHeroSelectable(ArrayElement())));
     MinWait();
     cursor = new Cursor(-3.75, 3.75, -2, 2);
 }
