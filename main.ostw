@@ -454,6 +454,8 @@ if (currentPhase == Phase.Gameplay)
             );
         }
     }
+    # Clean up class assets since we're done with them
+    DeleteAllClasses();
 }
 
 import "interface/HeroSelect.del";
