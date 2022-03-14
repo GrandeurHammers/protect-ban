@@ -14,6 +14,7 @@ globalvar Number losingTeamBans = WorkshopSettingInteger("Ban", "Extra Bans", 1,
 globalvar Number maxTankBans = WorkshopSettingInteger("Ban", "Max Tank Bans (-1 for No Limit)", 2, -1, 8, 12);
 globalvar Number maxDamageBans = WorkshopSettingInteger("Ban", "Max Damage Bans (-1 for No Limit)", 4, -1, 8, 13);
 globalvar Number maxSupportBans = WorkshopSettingInteger("Ban", "Max Support Bans (-1 for No Limit)", 2, -1, 8, 14);
+globalvar Number desiredReadyPlayers = WorkshopSettingInteger("General", "Required Ready Players to Begin", 12, 1, 12);
 // END CUSTOMIZATION
 globalvar Hero[] protectedHeroes = [];
 globalvar Hero[] bannedHeroes = [];
@@ -68,6 +69,8 @@ Number supportPicks: CountOf(
     )
 );
 Number maxSupportPicks: (currentPhase == Phase.Protect) ? maxSupportProtects : maxSupportBans;
+Number neededReadyPlayers: Max(Min(desiredReadyPlayers, CountOf(AllPlayers())), 1);
+
 
 enum Phase {
     Waiting,
@@ -352,7 +355,7 @@ if (currentPhase == Phase.Waiting)
         VisibleTo:          visibleIf(LocalPlayer().isInMenu),
         Header:             <"<0>/<1> <2> <3>",
                                 CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)),
-                                NumberOfPlayers(),
+                                neededReadyPlayers,
                                 @"Players",
                                 @"Ready"
                             >,
@@ -371,7 +374,7 @@ if (currentPhase == Phase.Waiting)
 # Ensure at least one player is playing
 if (NumberOfPlayers() > 0)
 # Wait for everyone to be ready
-if (IsTrueForAll(AllPlayers(), ArrayElement().isReady))
+if (CountOf(FilteredArray(AllPlayers(), ArrayElement().isReady)) >= neededReadyPlayers)
 {
     BigMessage(AllPlayers(), "Starting in 10 seconds...");
     Wait(5);
