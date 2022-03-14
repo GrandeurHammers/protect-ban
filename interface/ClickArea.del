@@ -7,7 +7,7 @@ class ClickArea {
     public Number sizeY;
     public Any clickID;
 
-    public ClickArea(Number CenterX, Number CenterY, Number SizeX, Number SizeY, Any ClickID) {
+    public constructor(Number CenterX, Number CenterY, Number SizeX, Number SizeY, Any ClickID) {
         centerX = CenterX;
         centerY = CenterY;
         sizeX   = SizeX;
@@ -15,7 +15,7 @@ class ClickArea {
         clickID = ClickID;
     }
 
-    public Number isHovered(Number cursorX, Number cursorY): AbsoluteValue(cursorX-centerX) <= sizeX/2 && 
+    public Number isHovered(Number cursorX, Number cursorY): AbsoluteValue(cursorX-centerX) <= sizeX/2 &&
                                                              AbsoluteValue(cursorY-centerY) <= sizeY/2;
 
     /*
