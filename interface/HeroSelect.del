@@ -130,7 +130,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
     heroesSorted = [Hero.Dva,Hero.Orisa,Hero.Reinhardt,Hero.Roadhog,Hero.Sigma,Hero.WreckingBall,Hero.Winston,Hero.Zarya,Hero.Ashe,Hero.Bastion,Hero.Cassidy,Hero.Doomfist,Hero.Echo,Hero.Genji,Hero.Hanzo,Hero.Junkrat,Hero.Mei,Hero.Pharah,Hero.Reaper,Hero.Soldier76,Hero.Symmetra,Hero.Sombra,Hero.Tracer,Hero.Torbjorn,Hero.Widowmaker,Hero.Ana,Hero.Brigitte,Hero.Baptiste,Hero.Lucio,Hero.Moira,Hero.Mercy,Hero.Zenyatta];
     // MinWait();
     CreateEffect(
-        VisibleTo:      LocalPlayer(),
+        VisibleTo:      AllPlayers(),
         Type:           Effect.Orb,
         Color:          Color.Black,
         Position:       Math.WorldVectorForPositionWithPitch(Vector(0, 0, -0.31), camPos, camFacing, true),
@@ -151,7 +151,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
             TextColor:      Color.White,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(textEntities, Operation.AppendToArray, LastTextID());
     }

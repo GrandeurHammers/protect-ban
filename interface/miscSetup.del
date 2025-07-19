@@ -54,7 +54,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
@@ -94,7 +94,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
             Scale:          3,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
-            Spectators:     Spectators.VisibleNever
+            Spectators:     Spectators.VisibleAlways
         );
         ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
     }
@@ -160,7 +160,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Scale:          2,
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxTankPicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
-        Reevaluation:   InworldTextRev.VisibleToStringAndColor,
+        Reevaluation:   InworldTextRev.VisibleToPositionStringAndColor,
         Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
@@ -172,7 +172,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Scale:          2,
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxDamagePicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
-        Reevaluation:   InworldTextRev.VisibleToStringAndColor,
+        Reevaluation:   InworldTextRev.VisibleToPositionStringAndColor,
         Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
@@ -184,7 +184,7 @@ rule: "[miscSetup.del] Create additional on-screen elements"
         Scale:          2,
         TextColor:      (currentPhase > Phase.Waiting && currentPhase < Phase.Gameplay && maxSupportPicks != -1) ? Color.White : null,
         Clipping:       Clipping.DoNotClip,
-        Reevaluation:   InworldTextRev.VisibleToStringAndColor,
+        Reevaluation:   InworldTextRev.VisibleToPositionStringAndColor,
         Spectators:     Spectators.VisibleAlways
     );
     ModifyVariable(globalIWText, Operation.AppendToArray, LastTextID());
