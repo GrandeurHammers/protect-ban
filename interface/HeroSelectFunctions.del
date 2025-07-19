@@ -47,7 +47,7 @@ String unselectableHeroString(Number n):
     ArrayContains(protectedHeroes, heroesSorted[n]) ?
         AbilityIconString(Hero.Brigitte, Button.SecondaryFire) :
         ArrayContains(bannedHeroes, heroesSorted[n]) ?
-            IconString(Icon.No) : "  --  ";
+            IconString(Icon.No) : " -- ";
 Number heroX(Number n):
     rowWidth / -2 + (rowWidth / CountOf(heroesSorted)) * (n + 0.5);
 Number cursorHeroIndex(Number x):

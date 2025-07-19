@@ -148,7 +148,7 @@ rule: "[HeroSelectAnywhere.del] Main setup"
                 heroString(EvaluateOnce(4 * i + 2)),
                 heroString(EvaluateOnce(4 * i + 3))>,
             Position:       screenPos(heroX(4 * i + 1.5), rowY),
-            Scale:          (436.3 - 7.25 * CountOf(heroesSorted)) / 100,
+            Scale:          (436.3 - 5.75 * CountOf(heroesSorted)) / 100,
             TextColor:      Color.White,
             Clipping:       Clipping.DoNotClip,
             Reevaluation:   InworldTextRev.VisibleToAndString,
