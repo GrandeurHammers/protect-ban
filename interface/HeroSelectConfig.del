@@ -14,14 +14,15 @@ Number readyBtnHeight: 0.3;
 
 // Workshop settings
 
+String InterfaceSettingsCategory: "6. Interface";
 Boolean cursorBox: WorkshopSettingToggle(
-    Category:       "Interface",
+    Category:       InterfaceSettingsCategory,
     Name:           "Highlight hovered hero (4 texts)",
     Default:        true,
     SortOrder:      5
 );
 Boolean selectedBox: WorkshopSettingToggle(
-    Category:       "Interface",
+    Category:       InterfaceSettingsCategory,
     Name:           "Highlight selected hero (4 texts)",
     Default:        true,
     SortOrder:      6
